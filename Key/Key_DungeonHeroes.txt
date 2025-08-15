@@ -9,7 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 --// Webhook URL
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1401568771679846541/6ojRCXUGtbL6XKD7DeKXM5VyBzuAjPGKVn_1gO0FD-8hWaVTjcRBRP21iylNuEXhnJzz"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1406026077771399233/xuFaD6U2EdXwOYFCZpsJTQE0ZVaMdu61ZlbsJBIk9oR54iuYnKlOrBWFtEskmnvTkJex"
 
 --// HWID Ban System
 local BANNED_HWIDS = {
@@ -564,4 +564,5 @@ PremiumBtn.MouseButton1Click:Connect(function()
 	task.wait(3)
 	successGui:Destroy()
 end)
+
 
