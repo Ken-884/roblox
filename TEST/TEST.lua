@@ -70,6 +70,104 @@ else
     InfoGroup:AddLabel("🖥️ Desktop Device Detected")
 end
 
+-- UI Scale dropdown for mobile compatibility
+UISettingsGroup:AddDropdown("UIScale", {
+    Text = "UI Scale",
+    Values = {"75%", "100%", "125%", "150%"},
+    Default = 2, -- 100%
+    Tooltip = "Adjust UI size for better mobile experience",
+    Callback = function(value)
+        local scaleMap = {
+            ["75%"] = 75,
+            ["100%"] = 100,
+            ["125%"] = 125,
+            ["150%"] = 150
+        }
+        
+        -- Disable the library's watermark before scaling
+        Library:SetWatermarkVisibility(false)
+        
+        -- Apply DPI scale to UI only
+        Library:SetDPIScale(scaleMap[value])
+        
+        -- Don't re-enable the library watermark - we'll use our custom one
+    end
+})
+
+-- Custom Watermark setup (independent of UI scaling)
+local CoreGui = game:GetService("CoreGui")
+
+-- Create independent watermark ScreenGui
+local WatermarkGui = Instance.new("ScreenGui")
+WatermarkGui.Name = "SeisenWatermark"
+WatermarkGui.DisplayOrder = 999999
+WatermarkGui.IgnoreGuiInset = true
+WatermarkGui.ResetOnSpawn = false
+WatermarkGui.Parent = CoreGui
+
+-- Create watermark frame (main container)
+local WatermarkFrame = Instance.new("Frame")
+WatermarkFrame.Name = "WatermarkFrame"
+WatermarkFrame.Size = UDim2.new(0, 100, 0, 120) -- Taller container for vertical layout
+WatermarkFrame.Position = UDim2.new(0, 10, 0, 100) -- Default position (lower)
+WatermarkFrame.BackgroundTransparency = 1 -- Transparent container
+WatermarkFrame.BorderSizePixel = 0
+WatermarkFrame.Parent = WatermarkGui
+
+-- Create perfect circular logo frame
+local CircleFrame = Instance.new("Frame")
+CircleFrame.Name = "CircleFrame"
+CircleFrame.Size = UDim2.new(0, 60, 0, 60) -- Perfect square = perfect circle
+CircleFrame.Position = UDim2.new(0.5, -30, 0, 0) -- Centered horizontally at top
+CircleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+CircleFrame.BorderSizePixel = 0
+CircleFrame.Parent = WatermarkFrame
+
+-- Create circular corner (makes it a perfect circle)
+local WatermarkCorner = Instance.new("UICorner")
+WatermarkCorner.CornerRadius = UDim.new(0.5, 0) -- 50% radius = perfect circle
+WatermarkCorner.Parent = CircleFrame
+
+-- Create custom logo/image
+local WatermarkImage = Instance.new("ImageLabel")
+WatermarkImage.Name = "WatermarkImage"
+WatermarkImage.Size = UDim2.new(1, 0, 1, 0) -- Fill the entire circle frame
+WatermarkImage.Position = UDim2.new(0, 0, 0, 0) -- Cover the entire circle
+WatermarkImage.BackgroundTransparency = 1
+WatermarkImage.ImageColor3 = Color3.fromRGB(255, 255, 255) -- White tint
+WatermarkImage.ScaleType = Enum.ScaleType.Crop -- Crop to fill the circle
+WatermarkImage.Parent = CircleFrame
+
+-- Make the image circular to match the frame
+local ImageCorner = Instance.new("UICorner")
+ImageCorner.CornerRadius = UDim.new(0.5, 0) -- Same circular radius as the frame
+ImageCorner.Parent = WatermarkImage
+
+-- Try multiple image formats for better compatibility
+local imageFormats = {
+    "rbxassetid://121631680891470",
+    "http://www.roblox.com/asset/?id=121631680891470",
+    "rbxasset://textures/ui/GuiImagePlaceholder.png" -- Fallback image
+}
+
+-- Function to try loading the image
+local function tryLoadImage()
+    for i, imageId in ipairs(imageFormats) do
+        WatermarkImage.Image = imageId
+        
+        -- Wait a bit to see if image loads
+        task.wait(0.5)
+        
+        -- Check if image loaded (non-zero size means it loaded)
+        if WatermarkImage.AbsoluteSize.X > 0 and WatermarkImage.AbsoluteSize.Y > 0 then
+            -- Removed debug print
+            break
+        elseif i == #imageFormats then
+            -- If all formats fail, use a text fallback
+            -- Removed debug print
+            WatermarkImage.Image = ""
+            
+            -- Create text fallback
             local FallbackText = Instance.new("TextLabel")
             FallbackText.Size = UDim2.new(1, 0, 1, 0)
             FallbackText.Position = UDim2.new(0, 0, 0, 0)
@@ -340,6 +438,8 @@ local autoChakraProgressionUpgradeEnabled = config.AutoChakraProgressionUpgradeT
 local autoSoloHunterRankEnabled = config.AutoSoloHunterRankToggle or false
 local autoReawakeningProgressionUpgradeEnabled = config.AutoReawakeningProgressionUpgradeToggle or false
 local autoMonarchProgressionUpgradeEnabled = config.AutoMonarchProgressionUpgradeToggle or false
+local autoPrestigeEnabled = config.AutoPrestigeToggle or false
+local autoPsychicMayhemEnabled = config.AutoPsychicMayhemToggle or false
 local autoDungeonEnabled = config.AutoDungeonToggle or false
 local selectedMonsters = config.MonsterSelector or {}
 local attackCooldown = config.AttackCooldownSlider or 0.15
@@ -398,6 +498,8 @@ attackCooldown = config.AttackCooldownSlider or 0.15
 autoRollPowerEyesEnabled = config.AutoRollPowerEyesToggle or false
 autoSpiritualUpgradeEnabled = config.AutoSpiritualUpgradeToggle or false
 autoReiatsuColorEnabled = config.AutoReiatsuColorToggle or false
+autoPrestigeEnabled = config.AutoPrestigeToggle or false
+autoPsychicMayhemEnabled = config.AutoPsychicMayhemToggle or false
 local originalVolumes = {}
 
 -- Top config variables for new features
@@ -643,6 +745,22 @@ local function startAutoDelete()
                         ["5"] = {"70089"},
                         ["6"] = {"70090"}
                     },
+                    ["Star_14"] = {
+                        ["1"] = {"70092"},
+                        ["2"] = {"70093"},
+                        ["3"] = {"70094"},
+                        ["4"] = {"70095"},
+                        ["5"] = {"70096"},
+                        ["6"] = {"70097"}
+                    },
+                    ["Star_15"] = {
+                        ["1"] = {"70099"},
+                        ["2"] = {"70100"},
+                        ["3"] = {"70101"},
+                        ["4"] = {"70102"},
+                        ["5"] = {"70103"},
+                        ["6"] = {"70104"}
+                    }
                 }
 
                 for star, rarities in pairs(starRarityMap) do
@@ -1800,7 +1918,8 @@ local redeemCodes = {
     "2MVisits", "Update3Part2", "20KLikes", "SorryForDelay1", "6KPlayers", "Update4", "25KLIKES", "100KFAV",
     "Update10", "20MVisits", "280KFAV", "290KFAV", "105KLikes", "EnergyFix", "TinyCode", "Update10Part2", "25MVisits",
     "300KFAV", "110KLIKES", "DefenseRaidFix","Update11","115KLIKES","120KLIKES","310KFAV","17KPlayers","UpdateDelay",
-    "BugFixUpdate11","18KPlayers","19KPlayers","20KPlayers","21KPlayers"
+    "BugFixUpdate11","18KPlayers","19KPlayers","20KPlayers","21KPlayers", "Update11.5", "320KFav","130KLikes","30MVisits",
+    "TheEyes",
 }
 
 local function redeemAllCodes()
@@ -2218,7 +2337,71 @@ function startAutoSpiritualUpgrade()
     end)
 end
 
-if isAuraEnabled then startAutoFarm() end
+
+-- Auto Prestige Toggle
+local autoPrestigeThread = nil
+local function startAutoPrestige()
+    if autoPrestigeThread then return end
+    autoPrestigeThread = task.spawn(function()
+        while autoPrestigeEnabled do
+            local args = {
+                [1] = {
+                    ["Action"] = "Level_Up_Prestige";
+                };
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Events", 9e9):WaitForChild("To_Server", 9e9):FireServer(unpack(args))
+            task.wait(1.5)
+        end
+    end)
+end
+
+-- Auto Buy Psychic Mayhem Toggle
+local autoPsychicMayhemThread = nil
+local function startAutoPsychicMayhem()
+    if autoPsychicMayhemThread then return end
+    autoPsychicMayhemThread = task.spawn(function()
+        while autoPsychicMayhemEnabled do
+            -- Buy Psychic Mayhem Unlock
+            local buyArgs = {
+                [1] = {
+                    ["Upgrading_Name"] = "Unlock",
+                    ["Action"] = "_Upgrades",
+                    ["Upgrade_Name"] = "Psychic_Mayhem_Unlock",
+                },
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Events", 9e9):WaitForChild("To_Server", 9e9):FireServer(unpack(buyArgs))
+            task.wait(0.5)
+            -- Roll Psychic Mayhem
+            local rollArgs = {
+                [1] = {
+                    ["Open_Amount"] = 1,
+                    ["Action"] = "_Gacha_Activate",
+                    ["Name"] = "Psychic_Mayhem",
+                },
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Events", 9e9):WaitForChild("To_Server", 9e9):FireServer(unpack(rollArgs))
+            task.wait(1.5)
+        end
+    end)
+end
+
+local function stopAutoPsychicMayhem()
+    autoPsychicMayhemEnabled = false
+    if autoPsychicMayhemThread then
+        autoPsychicMayhemThread = nil
+    end
+end
+
+local function stopAutoPrestige()
+    autoPrestigeEnabled = false
+    if autoPrestigeThread then
+        autoPrestigeThread = nil
+    end
+end
+
+task.defer(function()
+    if isAuraEnabled then startAutoFarm() end
+end)
 if autoRankEnabled then startAutoRank() end
 if autoAvatarLevelingEnabled then startAutoAvatarLeveling() end
 if autoAcceptAllQuestsEnabled then startAutoQuests() end
@@ -2291,6 +2474,7 @@ if config.AutoRollPowerEyesToggle then startAutoRollPowerEyes() end
 LeftGroupbox:AddToggle("AutoFarmToggle", {
     Text = "Fast Auto Farm",
     Default = isAuraEnabled,
+    Tooltip = "Automatically farms monsters for you.",
     Callback = function(Value)
         disableAllAurasExcept("AutoFarm")
         config.AutoFarmToggle = Value
@@ -2306,6 +2490,7 @@ monsterDropdown = LeftGroupbox:AddDropdown("MonsterSelector", {
     Values = getAllMonsterTitles(),
     Default = config.MonsterSelector or {},
     Multi = true,
+    Tooltip = "Choose which monsters to target (by Title)",
     Tooltip = "Choose which monsters to target (by Title)",
     Callback = function(values)
         local HttpService = game:GetService("HttpService")
@@ -2367,6 +2552,7 @@ LeftGroupbox:AddSlider("AttackCooldownSlider", {
     Suffix = "s",
     Rounding = 2,
     Tooltip = "Set the delay between attacks (lower = faster)",
+    Tooltip = "Set the delay between attacks (lower = faster)",
     Callback = function(Value)
         attackCooldown = Value
         config.AttackCooldownSlider = Value
@@ -2382,6 +2568,7 @@ LeftGroupbox:AddSlider("AttackCooldownSlider", {
 LeftGroupbox:AddToggle("AutoRankToggle", {
     Text = "Auto Rank",
     Default = autoRankEnabled,
+    Tooltip = "Automatically ranks up your character.",
     Callback = function(Value)
         autoRankEnabled = Value
         config.AutoRankToggle = Value
@@ -2394,6 +2581,7 @@ LeftGroupbox:AddToggle("AutoRankToggle", {
 LeftGroupbox:AddToggle("AutoAvatarLevelingToggle", {
     Text = "Auto Avatar Leveling",
     Default = autoAvatarLevelingEnabled,
+    Tooltip = "Automatically levels up your avatar.",
     Callback = function(Value)
         autoAvatarLevelingEnabled = Value
         config.AutoAvatarLevelingToggle = Value
@@ -2406,6 +2594,7 @@ LeftGroupbox:AddToggle("AutoAvatarLevelingToggle", {
 LeftGroupbox:AddToggle("AutoAcceptAllQuestsToggle", {
     Text = "Auto Accept & Claim All Quests",
     Default = autoAcceptAllQuestsEnabled,
+    Tooltip = "Automatically accepts and claims all quests.",
     Callback = function(Value)
         autoAcceptAllQuestsEnabled = Value
         config.AutoAcceptAllQuestsToggle = Value
@@ -2418,6 +2607,7 @@ LeftGroupbox:AddToggle("AutoAcceptAllQuestsToggle", {
 LeftGroupbox:AddToggle("AutoClaimAchievement", {
     Text = "Auto Achievements",
     Default = autoClaimAchievementsEnabled,
+    Tooltip = "Automatically claims achievements.",
     Callback = function(Value)
         autoClaimAchievementsEnabled = Value
         config.AutoClaimAchievement = Value
@@ -2429,6 +2619,7 @@ LeftGroupbox:AddToggle("AutoClaimAchievement", {
 LeftGroupbox:AddToggle("AutoObeliskToggle", {
     Text = "Auto Obelisk Upgrade",
     Default = autoObeliskEnabled,
+    Tooltip = "Automatically upgrades your Obelisk.",
     Callback = function(Value)
         autoObeliskEnabled = Value
         config.AutoObeliskToggle = Value
@@ -2440,6 +2631,21 @@ LeftGroupbox:AddToggle("AutoObeliskToggle", {
 })
 
 
+LeftGroupbox:AddToggle("AutoPrestigeToggle", {
+    Text = "Auto Prestige",
+    Default = autoPrestigeEnabled,
+    Tooltip = "Automatically prestiges your character when possible.",
+    Callback = function(Value)
+        autoPrestigeEnabled = Value
+        config.AutoPrestigeToggle = Value
+        saveConfig()
+        if Value then
+            startAutoPrestige()
+        else
+            stopAutoPrestige()
+        end
+    end
+})
 
 -- Auto Roll Dragon Race Toggle
 RollGroupbox2:AddToggle("AutoRollDragonRaceToggle", {
@@ -2459,7 +2665,165 @@ RollGroupbox2:AddToggle("AutoRollSaiyanEvolutionToggle", {
     Default = autoRollSaiyanEvolutionEnabled,
     Callback = function(Value)
         autoRollSaiyanEvolutionEnabled = Value
-        config.AutoRollSaiya
+        config.AutoRollSaiyanEvolutionToggle = Value
+        if Value then startAutoRollSaiyanEvolution() end
+        saveConfig()
+    end
+})
+
+-- Auto Roll Stars Toggle
+RollGroupbox:AddToggle("AutoRollStarsToggle", {
+    Text = "Auto Roll Stars",
+    Default = autoRollEnabled,
+    Callback = function(Value)
+        autoRollEnabled = Value
+        config.AutoRollStarsToggle = Value
+        if Value then startAutoRollStars() end
+        saveConfig()
+    end
+})
+
+local placeToStar = {
+    ["Earth City"] = "Star_1",
+    ["Windmill Island"] = "Star_2",
+    ["Soul Society"] = "Star_3",
+    ["Cursed School"] = "Star_4",
+    ["Slayer Village"] = "Star_5",
+    ["Solo Island"] = "Star_6",
+    ["Clover Village"] = "Star_7",
+    ["Leaf Village"] = "Star_8",
+    ["Spirit Residence"] = "Star_9",
+    ["Magic_Hunter_City"] = "Star_10",
+    ["Titan Village"] = "Star_11",
+    ["Village of Sins"] = "Star_12",
+    ["Kaiju Base"] = "Star_13",
+    ["Tempest Capital"] = "Star_14",
+    ["Virtual City"] = "Star_15"
+}
+local starToPlace = {}
+for place, star in pairs(placeToStar) do
+    starToPlace[star] = place
+end
+-- Select Star Dropdown
+RollGroupbox:AddDropdown("SelectStarDropdown", {
+    Values = {"Earth City", "Windmill Island", "Soul Society", "Cursed School", "Slayer Village", "Solo Island", "Clover Village", "Leaf Village", "Spirit Residence", "Magic_Hunter_City", "Titan Village", "Village of Sins", "Kaiju Base", "Tempest Capital", "Virtual City"},
+    Default = starToPlace[selectedStar] or "Earth City",
+    Multi = false,
+    Text = "Select Star (by Place)",
+    Callback = function(Option)
+        selectedStar = placeToStar[Option] or "Star_1"
+        config.SelectStarDropdown = selectedStar
+        saveConfig()
+    end
+})
+
+-- Delay Slider
+RollGroupbox:AddSlider("DelayBetweenRollsSlider", {
+    Text = "Delay Between Rolls",
+    Min = 0.5,
+    Max = 2,
+    Default = delayBetweenRolls,
+    Suffix = "s",
+    Callback = function(Value)
+        delayBetweenRolls = Value
+        config.DelayBetweenRollsSlider = Value
+        saveConfig()
+    end
+})
+
+-- Auto Roll Swords
+RollGroupbox2:AddToggle("AutoRollSwordsToggle", {
+    Text = "Auto Roll Swords",
+    Default = autoRollSwordsEnabled,
+    Callback = function(Value)
+        autoRollSwordsEnabled = Value
+        config.AutoRollSwordsToggle = Value
+        if Value then startAutoRollSwords() end
+        saveConfig()
+    end
+})
+
+-- Auto Roll Pirate Crew
+RollGroupbox2:AddToggle("AutoRollPirateCrewToggle", {
+    Text = "Auto Roll Pirate Crew",
+    Default = autoRollPirateCrewEnabled,
+    Callback = function(Value)
+        autoRollPirateCrewEnabled = Value
+        config.AutoRollPirateCrewToggle = Value
+        if Value then startAutoRollPirateCrew() end
+        saveConfig()
+    end
+})
+
+-- Auto Roll Demon Fruits
+RollGroupbox2:AddToggle("AutoRollDemonFruitsToggle", {
+    Text = "Auto Roll Demon Fruits",
+    Default = autoRollDemonFruitsEnabled,
+    Callback = function(Value)
+        autoRollDemonFruitsEnabled = Value
+        config.AutoRollDemonFruitsToggle = Value
+        if Value then startAutoRollDemonFruits() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoRollReiatsuColorToggle", {
+    Text = "Auto Roll Reiatsu Color",
+    Default = autoRollReiatsuColorEnabled,
+    Callback = function(Value)
+        autoRollReiatsuColorEnabled = Value
+        config.AutoRollReiatsuColorToggle = Value
+        if Value then startAutoRollReiatsuColor() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoRollZanpakutoToggle", {
+    Text = "Auto Roll Zanpakuto",
+    Default = autoRollZanpakutoEnabled,
+    Callback = function(Value)
+        autoRollZanpakutoEnabled = Value
+        config.AutoRollZanpakutoToggle = Value
+        if Value then startAutoRollZanpakuto() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoRollCursesToggle", {
+    Text = "Auto Roll Curses",
+    Default = autoRollCursesEnabled,
+    Callback = function(Value)
+        autoRollCursesEnabled = Value
+        config.AutoRollCursesToggle = Value
+        if Value then startAutoRollCurses() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoRollDemonArtsToggle", {
+    Text = "Auto Roll Demon Arts",
+    Default = autoRollDemonArtsEnabled,
+    Callback = function(Value)
+        autoRollDemonArtsEnabled = Value
+        config.AutoRollDemonArtsToggle = Value
+        if Value then startAutoRollDemonArts() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoRollGrimoireToggle", {
+    Text = "Auto Roll Grimoire",
+    Default = config.AutoRollGrimoireToggle or false,
+    Callback = function(Value)
+        config.AutoRollGrimoireToggle = Value
+        if Value then startAutoRollGrimoire() end
+        saveConfig()
+    end
+})
+
+RollGroupbox2:AddToggle("AutoSoloHunterRankToggle", {
+    Text = "Auto Roll Solo Rank",
+    Default = autoSoloHunterRankEnabled,
     Callback = function(Value)
         autoSoloHunterRankEnabled = Value
         config.AutoSoloHunterRankToggle = Value
@@ -2476,6 +2840,23 @@ RollGroupbox2:AddToggle("AutoRollPowerEyesToggle", {
         config.AutoRollPowerEyesToggle = Value
         if Value then startAutoRollPowerEyes() end
         saveConfig()
+    end
+})
+
+
+RollGroupbox2:AddToggle("AutoPsychicMayhemToggle", {
+    Text = "Auto Psychic Mayhem",
+    Default = autoPsychicMayhemEnabled,
+    Tooltip = "Automatically buys and rolls Psychic Mayhem.",
+    Callback = function(Value)
+        autoPsychicMayhemEnabled = Value
+        config.AutoPsychicMayhemToggle = Value
+        saveConfig()
+        if Value then
+            startAutoPsychicMayhem()
+        else
+            stopAutoPsychicMayhem()
+        end
     end
 })
 
@@ -2496,7 +2877,7 @@ AutoDeleteGroupbox:AddToggle("AutoDeleteUnitsToggle", {
 
 -- Select Star for Auto Delete Dropdown
 AutoDeleteGroupbox:AddDropdown("SelectDeleteStarDropdown", {
-    Values = {"Earth City", "Windmill Island", "Soul Society", "Cursed School", "Slayer Village", "Solo Island", "Clover Village", "Leaf Village", "Spirit Residence", "Magic_Hunter_City", "Titan Village", "Village of Sins", "Kaiju Base", "Tempest Capital"},
+    Values = {"Earth City", "Windmill Island", "Soul Society", "Cursed School", "Slayer Village", "Solo Island", "Clover Village", "Leaf Village", "Spirit Residence", "Magic_Hunter_City", "Titan Village", "Village of Sins", "Kaiju Base", "Tempest Capital", "Virtual City"},
     Default = starToPlace[selectedDeleteStar] or "Earth City",
     Multi = false,
     Text = "Select Star for Auto Delete (by Place)",
@@ -2581,6 +2962,7 @@ StatsGroupbox:AddDropdown("AutoStatSingleDropdown", {
     Default = selectedStat, -- display name
     Multi = false,
     Text = "Select Stat",
+    Tooltip = "Select which stat to auto assign points to.",
     Callback = function(Value)
         selectedStat = Value -- display name
         config.AutoStatSingleDropdown = Value
@@ -2591,6 +2973,7 @@ StatsGroupbox:AddDropdown("AutoStatSingleDropdown", {
 StatsGroupbox:AddToggle("AutoAssignStatToggle", {
     Text = "Enable Auto Stat",
     Default = autoStatsRunning,
+    Tooltip = "Enable automatic stat assignment.",
     Callback = function(Value)
         autoStatsRunning = Value
         config.AutoAssignStatToggle = Value
@@ -2605,6 +2988,7 @@ StatsGroupbox:AddSlider("PointsPerSecondSlider", {
     Min = 1,
     Max = 10,
     Rounding = 0,
+    Tooltip = "Set how many stat points to assign per second.",
     Callback = function(Value)
         pointsPerSecond = Value
         config.PointsPerSecondSlider = Value
@@ -2616,6 +3000,7 @@ StatsGroupbox:AddSlider("PointsPerSecondSlider", {
 RewardsGroupbox:AddToggle("AutoClaimTimeRewardToggle", {
     Text = "Auto Claim Time Reward",
     Default = isAutoTimeRewardEnabled,
+    Tooltip = "Automatically claims time-based rewards.",
     Callback = function(Value)
         isAutoTimeRewardEnabled = Value
         config.AutoClaimTimeRewardToggle = Value
@@ -2627,6 +3012,7 @@ RewardsGroupbox:AddToggle("AutoClaimTimeRewardToggle", {
 RewardsGroupbox:AddToggle("AutoClaimDailyChestToggle", {
     Text = "Auto Claim Daily Chest",
     Default = isAutoDailyChestEnabled,
+    Tooltip = "Automatically claims daily chest rewards.",
     Callback = function(Value)
         isAutoDailyChestEnabled = Value
         config.AutoClaimDailyChestToggle = Value
@@ -2638,6 +3024,7 @@ RewardsGroupbox:AddToggle("AutoClaimDailyChestToggle", {
 RewardsGroupbox:AddToggle("AutoClaimVipChestToggle", {
     Text = "Auto Claim Vip Chest (VIP Gamepass required)",
     Default = isAutoVipChestEnabled,
+    Tooltip = "Automatically claims VIP chest rewards (VIP required).",
     Callback = function(Value)
         isAutoVipChestEnabled = Value
         config.AutoClaimVipChestToggle = Value
@@ -2649,6 +3036,7 @@ RewardsGroupbox:AddToggle("AutoClaimVipChestToggle", {
 RewardsGroupbox:AddToggle("AutoClaimGroupChestToggle", {
     Text = "Auto Claim Group Chest",
     Default = isAutoGroupChestEnabled,
+    Tooltip = "Automatically claims group chest rewards.",
     Callback = function(Value)
         isAutoGroupChestEnabled = Value
         config.AutoClaimGroupChestToggle = Value
@@ -2660,6 +3048,7 @@ RewardsGroupbox:AddToggle("AutoClaimGroupChestToggle", {
 RewardsGroupbox:AddToggle("AutoClaimPremiumChestToggle", {
     Text = "Auto Claim Premium Chest (Premium User required)",
     Default = isAutoPremiumChestEnabled,
+    Tooltip = "Automatically claims premium chest rewards (Premium required).",
     Callback = function(Value)
         isAutoPremiumChestEnabled = Value
         config.AutoClaimPremiumChestToggle = Value
@@ -2684,14 +3073,16 @@ local teleportLocations = {
     ["Titan Village"] = "Titan_Village",
     ["Village of Sins"] = "Village_of_Sins",
     ["Kaiju Base"] = "Kaiju_Base",
-    ["Tempest Capital"] = "Tempest_Capital"
+    ["Tempest Capital"] = "Tempest_Capital",
+    ["Virtual City"] = "Virtual_City"
 }
 
 TPGroupbox:AddDropdown("MainTeleportDropdown", {
-    Values = {"Dungeon Lobby 1", "Earth City",  "Windmill Island", "Soul Society", "Cursed School", "Slayer Village", "Solo Island", "Clover Village", "Leaf Village", "Spirit Residence", "Magic_Hunter_City", "Titan Village", "Village of Sins", "Kaiju Base", "Tempest Capital"},
+    Values = {"Dungeon Lobby 1", "Earth City",  "Windmill Island", "Soul Society", "Cursed School", "Slayer Village", "Solo Island", "Clover Village", "Leaf Village", "Spirit Residence", "Magic_Hunter_City", "Titan Village", "Village of Sins", "Kaiju Base", "Tempest Capital", "Virtual City"},
     Default = config.MainTeleportDropdown or "Earth City",
     Multi = false,
     Text = "Teleport To",
+    Tooltip = "Teleport to the selected location.",
     Callback = function(selected)
         local locationKey = teleportLocations[selected]
         if locationKey then
@@ -2724,9 +3115,10 @@ local dungeonList = {
 for _, dungeon in ipairs(dungeonList) do
     local default = table.find(selectedDungeons, dungeon) ~= nil
     DungeonGroupbox:AddToggle("Toggle_" .. dungeon, {
-        Text = dungeon:gsub("_", " "),
-        Default = default,
-        Callback = function(Value)
+    Text = dungeon:gsub("_", " "),
+    Default = default,
+    Tooltip = "Enable or disable auto entry for this dungeon.",
+    Callback = function(Value)
             if Value then
                 if not table.find(selectedDungeons, dungeon) then
                     table.insert(selectedDungeons, dungeon)
@@ -2749,6 +3141,7 @@ end
 DungeonGroupbox:AddToggle("AutoEnterDungeonToggle", {
     Text = "Auto Enter Dungeon(s)",
     Default = autoEnterDungeon,
+    Tooltip = "Automatically enters selected dungeons.",
     Callback = function(Value)
         autoEnterDungeon = Value
         config.AutoEnterDungeonToggle = Value
@@ -2762,6 +3155,7 @@ DungeonGroupbox:AddToggle("AutoEnterDungeonToggle", {
 DungeonGroupbox:AddToggle("AutoDungeonToggle", {
     Text = "Auto Dungeon",
     Default = config.AutoDungeonToggle or false,
+    Tooltip = "Automatically runs dungeon logic.",
     Callback = function(Value)
         config.AutoDungeonToggle = Value
         saveConfig()
@@ -2779,6 +3173,7 @@ DungeonGroupbox:AddToggle("AutoDungeonToggle", {
 UpgradeGroupbox:AddToggle("AutoUpgradeToggle", {
     Text = "Auto Upgrade",
     Default = autoUpgradeEnabled,
+    Tooltip = "Automatically upgrades your character's stats.",
     Callback = function(Value)
         autoUpgradeEnabled = Value
         config.AutoUpgradeToggle = Value
@@ -2800,7 +3195,8 @@ for _, upgradeName in ipairs(upgradeOptions) do
     UpgradeGroupbox:AddToggle(upgradeName .. "_Toggle", {
         Text = upgradeName:gsub("_", " "),
         Default = config[upgradeName .. "_Toggle"] or false,
-        Callback = function(Value)
+    Tooltip = "Enable or disable auto upgrade for " .. upgradeName:gsub("_", " ") .. ".",
+    Callback = function(Value)
             config[upgradeName .. "_Toggle"] = Value
             enabledUpgrades[upgradeName] = Value
             saveConfig()
@@ -2814,6 +3210,7 @@ end
 Upgrade2:AddToggle("AutoHakiUpgradeToggle", {
     Text = "Auto Haki Upgrade",
     Default = autoHakiUpgradeEnabled,
+    Tooltip = "Automatically upgrades Haki.",
     Callback = function(Value)
         autoHakiUpgradeEnabled = Value
         config.AutoHakiUpgradeToggle = Value
@@ -2825,6 +3222,7 @@ Upgrade2:AddToggle("AutoHakiUpgradeToggle", {
 Upgrade2:AddToggle("AutoAttackRangeUpgradeToggle", {
     Text = "Auto Attack Range Upgrade",
     Default = autoAttackRangeUpgradeEnabled,
+    Tooltip = "Automatically upgrades attack range.",
     Callback = function(Value)
         autoAttackRangeUpgradeEnabled = Value
         config.AutoAttackRangeUpgradeToggle = Value
@@ -2836,6 +3234,7 @@ Upgrade2:AddToggle("AutoAttackRangeUpgradeToggle", {
 Upgrade2:AddToggle("AutoSpiritualPressureUpgradeToggle", {
     Text = "Auto Spiritual Pressure Upgrade",
     Default = autoSpiritualPressureUpgradeEnabled,
+    Tooltip = "Automatically upgrades spiritual pressure.",
     Callback = function(Value)
         autoSpiritualPressureUpgradeEnabled = Value
         config.AutoSpiritualPressureUpgradeToggle = Value
@@ -2847,6 +3246,7 @@ Upgrade2:AddToggle("AutoSpiritualPressureUpgradeToggle", {
 Upgrade2:AddToggle("AutoCursedProgressionUpgradeToggle", {
     Text = "Auto Cursed Progression Upgrade",
     Default = autoCursedProgressionUpgradeEnabled,
+    Tooltip = "Automatically upgrades cursed progression.",
     Callback = function(Value)
         autoCursedProgressionUpgradeEnabled = Value
         config.AutoCursedProgressionUpgradeToggle = Value
@@ -2858,6 +3258,7 @@ Upgrade2:AddToggle("AutoCursedProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoReawakeningProgressionUpgradeToggle", {
     Text = "Auto Reawakening Progression Upgrade",
     Default = autoReawakeningProgressionUpgradeEnabled,
+    Tooltip = "Automatically upgrades reawakening progression.",
     Callback = function(Value)
         autoReawakeningProgressionUpgradeEnabled = Value
         config.AutoReawakeningProgressionUpgradeToggle = Value
@@ -2869,6 +3270,7 @@ Upgrade2:AddToggle("AutoReawakeningProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoMonarchProgressionUpgradeToggle", {
     Text = "Auto Monarch Progression Upgrade",
     Default = autoMonarchProgressionUpgradeEnabled,
+    Tooltip = "Automatically upgrades monarch progression.",
     Callback = function(Value)
         autoMonarchProgressionUpgradeEnabled = Value
         config.AutoMonarchProgressionUpgradeToggle = Value
@@ -2881,6 +3283,7 @@ Upgrade2:AddToggle("AutoMonarchProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoWaterSpiritProgressionUpgradeToggle", {
     Text = "Auto Water Spirit Progression Upgrade",
     Default = config.AutoWaterSpiritProgressionUpgradeToggle or false,
+    Tooltip = "Automatically upgrades water spirit progression.",
     Callback = function(Value)
         config.AutoWaterSpiritProgressionUpgradeToggle = Value
         if Value then startAutoWaterSpiritProgressionUpgrade() end
@@ -2891,6 +3294,7 @@ Upgrade2:AddToggle("AutoWaterSpiritProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoWindSpiritProgressionUpgradeToggle", {
     Text = "Auto Wind Spirit Progression Upgrade",
     Default = config.AutoWindSpiritProgressionUpgradeToggle or false,
+    Tooltip = "Automatically upgrades wind spirit progression.",
     Callback = function(Value)
         config.AutoWindSpiritProgressionUpgradeToggle = Value
         if Value then startAutoWindSpiritProgressionUpgrade() end
@@ -2901,6 +3305,7 @@ Upgrade2:AddToggle("AutoWindSpiritProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoFireSpiritProgressionUpgradeToggle", {
     Text = "Auto Fire Spirit Progression Upgrade",
     Default = config.AutoFireSpiritProgressionUpgradeToggle or false,
+    Tooltip = "Automatically upgrades fire spirit progression.",
     Callback = function(Value)
         config.AutoFireSpiritProgressionUpgradeToggle = Value
         if Value then startAutoFireSpiritProgressionUpgrade() end
@@ -2911,6 +3316,7 @@ Upgrade2:AddToggle("AutoFireSpiritProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoChakraProgressionUpgradeToggle", {
     Text = "Auto Chakra Progression Upgrade",
     Default = autoChakraProgressionUpgradeEnabled,
+    Tooltip = "Automatically upgrades chakra progression.",
     Callback = function(Value)
         autoChakraProgressionUpgradeEnabled = Value
         config.AutoChakraProgressionUpgradeToggle = Value
@@ -2922,7 +3328,7 @@ Upgrade2:AddToggle("AutoChakraProgressionUpgradeToggle", {
 Upgrade2:AddToggle("AutoSpiritualUpgradeToggle", {
     Text = "Auto Spiritual Upgrade",
     Default = autoSpiritualUpgradeEnabled,
-    Tooltip = "Automatically unlocks and upgrades Spiritual Upgrade.",
+    Tooltip = "Automatically unlocks and upgrades spiritual upgrade.",
     Callback = function(Value)
         autoSpiritualUpgradeEnabled = Value
         config.AutoSpiritualUpgradeToggle = Value
@@ -3000,6 +3406,86 @@ UnloadGroupbox:AddButton("Unload Seisen Hub", function()
     isAutoGroupChestEnabled = false
     isAutoPremiumChestEnabled = false
     autoUpgradeEnabled = false
+    autoEnterDungeon = false
+    autoHakiUpgradeEnabled = false
+    autoRollDemonFruitsEnabled = false
+    autoAttackRangeUpgradeEnabled = false
+    autoAvatarLevelingEnabled = false
+    autoSpiritualPressureUpgradeEnabled = false
+    selectedStat = false
+    autoRollZanpakutoEnabledfalse = false
+    autoCursedProgressionUpgradeEnabled = false
+    autoChakraProgressionUpgradeEnabled = false
+    autoSoloHunterRankEnabled = false
+    autoReawakeningProgressionUpgradeEnabled = false
+    autoMonarchProgressionUpgradeEnabled = false
+    autoRollCursesEnabled = false
+    autoObeliskEnabled = false
+    selectedObeliskType = false
+    selectedGachaRarities = false
+    autoRollDemonArtsEnabled = false
+    autoDungeonEnabled = false
+    autoDungeonEnabled = false
+    autoRollPowerEyesEnabled = false
+    autoRollReiatsuColorEnabled = false
+    autoSpiritualUpgradeEnabled = false
+    autoPrestigeEnabled = false
+    autoPsychicMayhemEnabled = false
+    local argsOff = {
+        [1] = {
+            ["Value"] = false,
+            ["Path"] = { "Settings", "Is_Auto_Clicker" },
+            ["Action"] = "Settings",
+        }
+    }
+    pcall(function()
+        ToServer:FireServer(unpack(argsOff))
+    end)
+
+    if mutePetSoundsEnabled then
+        local audioFolder = ReplicatedStorage:FindFirstChild("Audio")
+        if audioFolder then
+            local petSounds = {"Pets_Appearing_Sound", "Pets_Drumroll", "Loot"}
+            for _, soundName in ipairs(petSounds) do
+                local sound = audioFolder:FindFirstChild(soundName)
+                if sound and sound:IsA("Sound") then
+                    sound.Volume = originalVolumes[soundName] or 0.5
+                end
+            end
+            local mergeFolder = audioFolder:FindFirstChild("Merge")
+            if mergeFolder then
+                local mergeSounds = {"PetsAppearingSound", "Drumroll", "ChestOpen"}
+                for _, soundName in ipairs(mergeSounds) do
+                    local sound = mergeFolder:FindFirstChild(soundName)
+                    if sound and sound:IsA("Sound") then
+                        sound.Volume = originalVolumes[soundName] or 0.5
+                    end
+                end
+            end
+        end
+    end
+
+    if disableNotificationsEnabled then
+        local playerGui = ReplicatedStorage:FindFirstChild("PlayerGui")
+        if playerGui then
+            local notifications = playerGui:FindFirstChild("Notifications")
+            if notifications then
+                if notifications:IsA("ScreenGui") or notifications:IsA("BillboardGui") or notifications:IsA("SurfaceGui") then
+                    notifications.Enabled = true
+                elseif notifications:IsA("GuiObject") then
+                    notifications.Visible = true
+                end
+            end
+        end
+    end
+
+    if Library and Library.Unload then
+        pcall(function()
+            Library:Unload()
+        end)
+    elseif getgenv().SeisenHubUI and getgenv().SeisenHubUI.Parent then
+        pcall(function()
+            getgenv().SeisenHubUI:Destroy()
         end)
     end
 
@@ -3092,4 +3578,3 @@ task.defer(function()
         end
     end
 end) 
-
