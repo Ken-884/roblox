@@ -12,7 +12,9 @@ local Games = {
     -- Blue Heater 2
     ["5803093656"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_BlueHeater2.txt",
     -- Arise Crossover
-    ["7074860883"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AriseCrossover.txt"
+    ["7074860883"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AriseCrossover.txt",
+    -- Anime Ranger X
+    ["6884266247"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AnimeRangerX.txt"
 }
 
 return Games
