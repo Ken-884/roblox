@@ -17,11 +17,10 @@ local BANNED_HWIDS = {
 }
 
 -- Config
-local service = 5291
-local secret = "54bdfa73-2775-4d6b-b81c-d253b77ed386"
+local service = 5843
+local secret = "2c40d9c4-4f97-487e-8bf0-3f517f0f9959"
 local useNonce = true
 local host = "https://api.platoboost.com"
-
 -- Key Save Folder and File
 local KEY_FOLDER = "SeisenHub"
 local KEY_FILE = KEY_FOLDER .. "/seisen_key.txt"
