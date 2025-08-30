@@ -601,12 +601,16 @@ task.spawn(function()
                 Library.Flags.AutoFarmToggle:Set(false)
             end
         end
-        -- Start Auto Farm if UI is not visible and toggle is on
-        if not uiVisible and config.AutoFarmToggle and not isAuraEnabled then
-            isAuraEnabled = true
-            startAutoFarm()
-            if Library.Flags and Library.Flags.AutoFarmToggle then
-                Library.Flags.AutoFarmToggle:Set(true)
+        -- Always ensure Auto Farm is enabled and running if UI is not visible and toggle is on
+        if not uiVisible and config.AutoFarmToggle then
+            if not isAuraEnabled then
+                isAuraEnabled = true
+                if Library.Flags and Library.Flags.AutoFarmToggle then
+                    Library.Flags.AutoFarmToggle:Set(true)
+                end
+            end
+            if not autoFarmThread or coroutine.status(autoFarmThread) == "dead" then
+                startAutoFarm()
             end
         end
 
@@ -618,12 +622,16 @@ task.spawn(function()
                 Library.Flags.FarmAllToggle:Set(false)
             end
         end
-        -- Start Farm All if UI is not visible and toggle is on
-        if not uiVisible and config.FarmAllToggle and not farmAllEnabled then
-            farmAllEnabled = true
-            task.spawn(startFarmAll)
-            if Library.Flags and Library.Flags.FarmAllToggle then
-                Library.Flags.FarmAllToggle:Set(true)
+        -- Always ensure Farm All is enabled and running if UI is not visible and toggle is on
+        if not uiVisible and config.FarmAllToggle then
+            if not farmAllEnabled then
+                farmAllEnabled = true
+                if Library.Flags and Library.Flags.FarmAllToggle then
+                    Library.Flags.FarmAllToggle:Set(true)
+                end
+            end
+            if not getgenv().FarmAllThread or coroutine.status(getgenv().FarmAllThread) == "dead" then
+                task.spawn(startFarmAll)
             end
         end
 
