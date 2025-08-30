@@ -718,6 +718,17 @@ local function teleportToMonster(monster)
     local myHRP = character and character:FindFirstChild("HumanoidRootPart")
     local targetHRP = monster and monster:FindFirstChild("HumanoidRootPart")
     if myHRP and targetHRP then
+        -- Safety: Only teleport to monsters inside dungeon if dungeon UI is visible
+        local player = game:GetService("Players").LocalPlayer
+        local gui = player:FindFirstChild("PlayerGui")
+        local dungeonGui = gui and gui:FindFirstChild("Dungeon")
+        local header = dungeonGui and dungeonGui:FindFirstChild("Default_Header")
+        if header and header.Visible then
+            local dungeonFarmRange = 140
+            if (myHRP.Position - targetHRP.Position).Magnitude > dungeonFarmRange then
+                return -- Don't teleport to far monsters when in dungeon
+            end
+        end
         pcall(function()
             myHRP.CFrame = CFrame.new(targetHRP.Position + teleportOffset)
         end)
