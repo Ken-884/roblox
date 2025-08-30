@@ -583,61 +583,6 @@ local autoFarmThread = nil
 local autoFarmThreadStop = false
 
 -- Helper functions for monster dropdown
--- Stop functions should reset enabled flags
-local function stopAutoFarm()
-    autoFarmThreadStop = true
-    isAuraEnabled = false
-end
-
-getgenv().StopFarmAllThread = function()
-    farmAllEnabled = false
-end
-
--- Persistent watcher for Auto Farm and Farm All
-task.spawn(function()
-    while getgenv().SeisenHubRunning do
-        local player = game:GetService("Players").LocalPlayer
-        local gui = player and player:FindFirstChild("PlayerGui")
-        local dungeonGui = gui and gui:FindFirstChild("Dungeon")
-        local notification = dungeonGui and dungeonGui:FindFirstChild("Dungeon_Notification")
-        local header = dungeonGui and dungeonGui:FindFirstChild("Default_Header")
-        local uiVisible = (notification and notification.Visible) or (header and header.Visible)
-
-        -- Stop Auto Farm if UI is visible
-        if uiVisible and isAuraEnabled then
-            stopAutoFarm()
-            if Library.Flags and Library.Flags.AutoFarmToggle then
-                Library.Flags.AutoFarmToggle:Set(false)
-            end
-        end
-        -- Start Auto Farm if UI is not visible and toggle is on
-        if not uiVisible and config.AutoFarmToggle and not isAuraEnabled then
-            isAuraEnabled = true
-            startAutoFarm()
-            if Library.Flags and Library.Flags.AutoFarmToggle then
-                Library.Flags.AutoFarmToggle:Set(true)
-            end
-        end
-
-        -- Stop Farm All if UI is visible
-        if uiVisible and farmAllEnabled then
-            if getgenv().StopFarmAllThread then getgenv().StopFarmAllThread() end
-            if Library.Flags and Library.Flags.FarmAllToggle then
-                Library.Flags.FarmAllToggle:Set(false)
-            end
-        end
-        -- Start Farm All if UI is not visible and toggle is on
-        if not uiVisible and config.FarmAllToggle and not farmAllEnabled then
-            farmAllEnabled = true
-            task.spawn(startFarmAll)
-            if Library.Flags and Library.Flags.FarmAllToggle then
-                Library.Flags.FarmAllToggle:Set(true)
-            end
-        end
-
-        task.wait(0.2)
-    end
-end)
 -- Persistent watcher for Auto Farm and Farm All
 task.spawn(function()
     while getgenv().SeisenHubRunning do
@@ -809,20 +754,7 @@ function startKillAuraOnly()
 end
 function startFarmAll()
     local player = game:GetService("Players").LocalPlayer
-    while getgenv().SeisenHubRunning do
-        local player = game:GetService("Players").LocalPlayer
-        local gui = player:FindFirstChild("PlayerGui")
-        local dungeonGui = gui and gui:FindFirstChild("Dungeon")
-        local notification = dungeonGui and dungeonGui:FindFirstChild("Dungeon_Notification")
-        local header = dungeonGui and dungeonGui:FindFirstChild("Default_Header")
-        if (notification and notification.Visible) or (header and header.Visible) then
-            farmAllEnabled = false
-            config.FarmAllToggle = false
-            if getgenv().StopFarmAllThread then getgenv().StopFarmAllThread() end
-            break
-        elseif config.FarmAllToggle and not farmAllEnabled and (not notification.Visible and not header.Visible) then
-            farmAllEnabled = true
-        end
+    while farmAllEnabled and getgenv().SeisenHubRunning do
         local monstersFolder = nil
         if workspace:FindFirstChild("Debris") and workspace.Debris:FindFirstChild("Monsters") then
             monstersFolder = workspace.Debris.Monsters
@@ -1056,19 +988,6 @@ local function startAutoFarm()
         autoFarmThread = coroutine.create(function()
             local currentTarget = nil
             while getgenv().SeisenHubRunning and config.AutoFarmToggle and not autoFarmThreadStop do
-                local player = game:GetService("Players").LocalPlayer
-                local gui = player:FindFirstChild("PlayerGui")
-                local dungeonGui = gui and gui:FindFirstChild("Dungeon")
-                local notification = dungeonGui and dungeonGui:FindFirstChild("Dungeon_Notification")
-                local header = dungeonGui and dungeonGui:FindFirstChild("Default_Header")
-                if (notification and notification.Visible) or (header and header.Visible) then
-                    isAuraEnabled = false
-                    config.AutoFarmToggle = false
-                    stopAutoFarm()
-                    break
-                elseif config.AutoFarmToggle and not isAuraEnabled and (not notification.Visible and not header.Visible) then
-                    isAuraEnabled = true
-                end
                 local char = localPlayer.Character
                 local myHRP = char and char:FindFirstChild("HumanoidRootPart")
 
