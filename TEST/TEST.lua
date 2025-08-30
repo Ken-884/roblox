@@ -601,8 +601,19 @@ task.spawn(function()
                 Library.Flags.AutoFarmToggle:Set(false)
             end
         end
-        -- Always ensure Auto Farm is enabled and running if UI is not visible and toggle is on
-        if not uiVisible and config.AutoFarmToggle then
+        -- Only enable Auto Farm and Farm All if BOTH UIs are NOT visible
+        local bothUINotVisible = (notification and not notification.Visible) and (header and not header.Visible)
+
+        -- Disable Auto Farm if either UI is visible
+        if not bothUINotVisible and isAuraEnabled then
+            isAuraEnabled = false
+            stopAutoFarm()
+            if Library.Flags and Library.Flags.AutoFarmToggle then
+                Library.Flags.AutoFarmToggle:Set(false)
+            end
+        end
+        -- Enable Auto Farm if both UIs are NOT visible and toggle is on
+        if bothUINotVisible and config.AutoFarmToggle then
             if not isAuraEnabled then
                 isAuraEnabled = true
                 if Library.Flags and Library.Flags.AutoFarmToggle then
@@ -614,16 +625,16 @@ task.spawn(function()
             end
         end
 
-        -- Stop Farm All if UI is visible
-        if uiVisible and farmAllEnabled then
+        -- Disable Farm All if either UI is visible
+        if not bothUINotVisible and farmAllEnabled then
             farmAllEnabled = false
             if getgenv().StopFarmAllThread then getgenv().StopFarmAllThread() end
             if Library.Flags and Library.Flags.FarmAllToggle then
                 Library.Flags.FarmAllToggle:Set(false)
             end
         end
-        -- Always ensure Farm All is enabled and running if UI is not visible and toggle is on
-        if not uiVisible and config.FarmAllToggle then
+        -- Enable Farm All if both UIs are NOT visible and toggle is on
+        if bothUINotVisible and config.FarmAllToggle then
             if not farmAllEnabled then
                 farmAllEnabled = true
                 if Library.Flags and Library.Flags.FarmAllToggle then
