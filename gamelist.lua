@@ -14,7 +14,9 @@ local Games = {
     -- Arise Crossover
     ["7074860883"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AriseCrossover.txt",
     -- Anime Ranger X
-    ["6884266247"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AnimeRangerX.txt"
+    ["6884266247"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_AnimeRangerX.txt",
+    -- Restaurant Tycoon 3
+    ["7094518649"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_RestaurantTycoon3.txt",
 }
 
 return Games
