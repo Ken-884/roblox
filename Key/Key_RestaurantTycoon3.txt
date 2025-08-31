@@ -382,7 +382,7 @@ end
 local function loadSwordburst()
 	task.spawn(function()
 		local success, err = pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Key/Key_HyperShot.txt"))()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Script/Script_RestaurantTycoon3.lua"))()
 		end)
 		if not success then
 			warn("Failed to load Swordburst:", err)
