@@ -1,4 +1,3 @@
---- FREE KEY IF PLATOBOOST IS DOWN ---
 local executorName = (identifyexecutor and identifyexecutor()) or ""
 
 -- Block if Xeno or Solara executor
