@@ -1,7 +1,22 @@
+--- FREE KEY IF PLATOBOOST IS DOWN ---
 local executorName = (identifyexecutor and identifyexecutor()) or ""
 
--- Block if Xeno or Solara executor
-if executorName:lower():find("xeno") or executorName:lower():find("solara") then
+-- Function to create a Roblox-style notification (bottom right corner)
+local function createNotification(message)
+    local StarterGui = game:GetService("StarterGui")
+    StarterGui:SetCore("SendNotification", {
+        Title = "Seisen Hub",
+        Text = message,
+        Duration = 8, -- seconds before it disappears
+    })
+end
+
+-- Normalize executor name to lowercase
+local execLower = executorName:lower()
+
+-- Block if executor contains any form of Xeno or Solara
+if execLower:find("xeno") or execLower:find("solara") then
+    createNotification("Xeno and Solara are no longer supported by Seisen Hub.")
     return {} -- Return empty table so no games are selected
 end
 
