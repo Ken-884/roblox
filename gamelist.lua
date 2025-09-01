@@ -1,4 +1,11 @@
 --- FREE KEY IF PLATOBOOST IS DOWN ---
+local executorName = (identifyexecutor and identifyexecutor()) or ""
+
+-- Block if Xeno or Solara executor
+if executorName:lower():find("xeno") or executorName:lower():find("solara") then
+    return {} -- Return empty table so no games are selected
+end
+
 local Games = {
     -- Swordburst 3 floors
     ["4093155512"] = "https://raw.githubusercontent.com/Mentos4/Roblox/refs/heads/main/Script/Script_Swordburst3.lua",
