@@ -17,6 +17,8 @@ local Games = {
     ["6884266247"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_AnimeRangerX.lua",
     -- Restaurant Tycoon 3
     ["7094518649"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_RestaurantTycoon3.lua",
+    -- Build a Zoo
+    ["8066283370"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildAZoo.lua"
 }
 
 return Games
