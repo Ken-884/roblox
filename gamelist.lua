@@ -1,6 +1,6 @@
 local Games = {
     -- Swordburst 3 floors
-    ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeEternal.lua",
+    ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Swordburst3.lua",
     -- Dungeon Heroes
     ["7546582051"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_DungeonHeroes.lua",
     -- Anime Eternal
