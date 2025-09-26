@@ -5,8 +5,6 @@ local Games = {
     ["7546582051"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_DungeonHeroes.lua",
     -- Anime Eternal
     ["7882829745"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_AnimeEternal.lua",
-    -- Hypershot
-    ["5995470825"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_Hypershot.lua",
     -- Build an Island
     ["7541395924"] = "https://raw.githubusercontent.com/Ken-884/Roblox/refs/heads/main/Script/Script_BuildanIsland.lua",
     -- Blue Heater 2
@@ -20,5 +18,6 @@ local Games = {
     -- Build a Zoo
     ["8066283370"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildAZoo.lua"
 }
+
 
 return Games
