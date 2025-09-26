@@ -1,39 +1,65 @@
 -- Luarmor runtime key check (kicks if expired/invalid)
 local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
-api.script_id = "c66685a510b26b7b1c3230ac5ee50e58" -- your script id or project id
+api.script_id = "c66685a510b26b7b1c3230ac5ee50e58" -- replace with your script id
 
-local script_key = rawget(_G, "script_key") or script_key
 local player = game.Players.LocalPlayer
-if not script_key or #script_key < 32 then
-    player:Kick("No or invalid Luarmor key provided.")
-    return
+local script_key = rawget(_G, "script_key") or script_key
+
+local function checkKeyAndKick()
+    local status = api.check_key(script_key)
+    if status.code == "KEY_VALID" then
+        -- continue script
+        return true
+    elseif status.code == "KEY_EXPIRED" then
+        player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
+        return false
+    elseif status.code == "KEY_HWID_LOCKED" then
+        player:Kick("Key is HWID locked. Please reset it using the Luarmor bot.")
+        return false
+    elseif status.code == "KEY_INCORRECT" then
+        player:Kick("Key is wrong or deleted!")
+        return false
+    else
+        player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
+        return false
+    end
 end
+
+-- Initial check
+if not checkKeyAndKick() then return end
+
+-- Periodic check every 5 seconds
+task.spawn(function()
+    while true do
+        task.wait(5)
+        if not checkKeyAndKick() then break end
+    end
+end)
+-- Luarmor runtime key check (kicks if expired/invalid)
+local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
+api.script_id = "YOUR_SCRIPT_ID_HERE" -- replace with your script id
+
+local player = game.Players.LocalPlayer
+local script_key = rawget(_G, "script_key") or script_key
 
 local status = api.check_key(script_key)
 if status.code == "KEY_VALID" then
-    -- continue script
+    -- continue script or call api.load_script() if you want
+    -- api.load_script()
+    return
 elseif status.code == "KEY_EXPIRED" then
     player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
+    return
+elseif status.code == "KEY_HWID_LOCKED" then
+    player:Kick("Key is HWID locked. Please reset it using the Luarmor bot.")
+    return
+elseif status.code == "KEY_INCORRECT" then
+    player:Kick("Key is wrong or deleted!")
     return
 else
     player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
     return
 end
--- Periodically check if the key is still valid (every 1 second)
-task.spawn(function()
-    while true do
-        task.wait(1)
-        local status = api.check_key(script_key)
-        if status.code == "KEY_EXPIRED" then
-            player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
-            break
-        elseif status.code ~= "KEY_VALID" then
-            player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
-            break
-        end
-    end
-end)
-
 
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
