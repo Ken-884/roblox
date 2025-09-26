@@ -19,6 +19,20 @@ else
     player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
     return
 end
+-- Periodically check if the key is still valid (every 10 seconds)
+task.spawn(function()
+    while true do
+        task.wait(10)
+        local status = api.check_key(script_key)
+        if status.code == "KEY_EXPIRED" then
+            player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
+            break
+        elseif status.code ~= "KEY_VALID" then
+            player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
+            break
+        end
+    end
+end)
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
     Text = "Anime Ranger X Script Loaded";
