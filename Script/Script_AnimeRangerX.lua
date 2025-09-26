@@ -60,6 +60,61 @@ task.spawn(function()
         Library:RemoveNotification(keyNotifyId)
     end
 end)
+
+-- Custom UI: Roblox system message bar style for key time left
+local CoreGui = game:GetService("CoreGui")
+local keyBarGui = Instance.new("ScreenGui")
+keyBarGui.Name = "LuarmorKeyBar"
+keyBarGui.IgnoreGuiInset = true
+keyBarGui.ResetOnSpawn = false
+keyBarGui.Parent = CoreGui
+
+local keyBar = Instance.new("TextLabel")
+keyBar.Name = "KeyTimeBar"
+keyBar.Size = UDim2.new(0.5, 0, 0, 36)
+keyBar.Position = UDim2.new(0.25, 0, 0, 0)
+keyBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+keyBar.BorderSizePixel = 0
+keyBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBar.TextStrokeTransparency = 0.7
+keyBar.Font = Enum.Font.SourceSansBold
+keyBar.TextSize = 22
+keyBar.Text = "Luarmor Key: Checking..."
+keyBar.Parent = keyBarGui
+
+local function updateKeyBar(text, color)
+    keyBar.Text = text
+    if color then keyBar.BackgroundColor3 = color end
+end
+
+task.spawn(function()
+    while true do
+        local status = api.check_key(script_key)
+        local timeLeft = status.time_left or 0
+        if status.code == "KEY_VALID" then
+            updateKeyBar("Luarmor Key: Valid | Time left: " .. math.floor(timeLeft) .. "s", Color3.fromRGB(35, 35, 35))
+        elseif status.code == "KEY_EXPIRED" then
+            updateKeyBar("Luarmor Key: EXPIRED", Color3.fromRGB(180, 40, 40))
+            task.wait(1)
+            keyBarGui:Destroy()
+            player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
+            break
+        else
+            updateKeyBar("Key check failed: " .. tostring(status.message or "Unknown error") .. " (" .. tostring(status.code or "?") .. ")", Color3.fromRGB(180, 40, 40))
+            task.wait(1)
+            keyBarGui:Destroy()
+            player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
+            break
+        end
+        task.wait(10)
+    end
+end)
+
+Library:OnUnload(function()
+    if keyBarGui and keyBarGui.Parent then
+        keyBarGui:Destroy()
+    end
+end)
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
     Text = "Anime Ranger X Script Loaded";
