@@ -22,7 +22,7 @@ end
 -- Periodically check if the key is still valid (every 10 seconds)
 task.spawn(function()
     while true do
-        task.wait(10)
+        task.wait(1)
         local status = api.check_key(script_key)
         if status.code == "KEY_EXPIRED" then
             player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
