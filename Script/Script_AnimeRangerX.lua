@@ -19,47 +19,6 @@ else
     player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
     return
 end
-local keyNotifyId = nil
-task.spawn(function()
-    while not Library or not Library.Notify do task.wait(0.1) end
-    local lastTime = nil
-    while not Library.Unloaded do
-        local status = api.check_key(script_key)
-        local timeLeft = status.time_left or 0
-        local text = "Luarmor Key: " .. (status.code == "KEY_VALID" and "Valid" or status.code) .. (timeLeft > 0 and (" | Time left: " .. math.floor(timeLeft) .. "s") or "")
-        if not keyNotifyId then
-            keyNotifyId = Library:Notify({
-                Title = "Luarmor Key Status",
-                Description = text,
-                Time = 1e6, -- effectively sticky
-                CanClose = false
-            })
-        else
-            Library:UpdateNotification(keyNotifyId, {
-                Description = text
-            })
-        end
-        if status.code == "KEY_EXPIRED" then
-            Library:UpdateNotification(keyNotifyId, {
-                Description = "Your Luarmor key is expired. Please get a new key from the checkpoint.",
-                CanClose = true
-            })
-            player:Kick("Your Luarmor key is expired. Please get a new key from the checkpoint.")
-            break
-        elseif status.code ~= "KEY_VALID" then
-            Library:UpdateNotification(keyNotifyId, {
-                Description = "Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"),
-                CanClose = true
-            })
-            player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
-            break
-        end
-        task.wait(10)
-    end
-    if keyNotifyId then
-        Library:RemoveNotification(keyNotifyId)
-    end
-end)
 
 -- Custom UI: Roblox system message bar style for key time left
 local CoreGui = game:GetService("CoreGui")
