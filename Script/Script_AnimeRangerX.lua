@@ -1,7 +1,7 @@
 
 -- Luarmor runtime key check (kicks if expired/invalid)
 local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
-api.script_id = "c66685a510b26b7b1c3230ac5ee50e58" -- your script id or project id
+api.script_id = "155c15b02119f3bce3a806a2336bfe80" -- your script id or project id
 
 local script_key = rawget(_G, "script_key") or getgenv().script_key or getgenv().LUARMOR_KEY
 local player = game.Players.LocalPlayer
