@@ -33,7 +33,6 @@ task.spawn(function()
         end
     end
 end)
-
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
     Text = "Anime Ranger X Script Loaded";
