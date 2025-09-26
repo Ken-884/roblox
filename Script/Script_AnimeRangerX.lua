@@ -1,9 +1,8 @@
-
 -- Luarmor runtime key check (kicks if expired/invalid)
 local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
 api.script_id = "155c15b02119f3bce3a806a2336bfe80" -- your script id or project id
 
-local script_key = rawget(_G, "script_key") or getgenv().script_key or getgenv().LUARMOR_KEY
+local script_key = rawget(_G, "script_key") or script_key
 local player = game.Players.LocalPlayer
 if not script_key or #script_key < 32 then
     player:Kick("No or invalid Luarmor key provided.")
@@ -20,12 +19,6 @@ else
     player:Kick("Key check failed: " .. tostring(status.message or "Unknown error") .. " Code: " .. tostring(status.code or "?"))
     return
 end
-
-
-
-
--- ...existing code...
-
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
     Text = "Anime Ranger X Script Loaded";
