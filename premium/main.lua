@@ -17,4 +17,3 @@ if scriptURL then
 else
     warn("No supported script found for this game. GameId: " .. gameId .. ", PlaceId: " .. placeId)
 end
-
