@@ -1,4 +1,4 @@
-local gamelist_content = game:HttpGet("https://raw.githubusercontent.com/Seisen88/Seisen-Hub-List/main/gamelist.lua")
+local gamelist_content = game:HttpGet("https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua")
 if not gamelist_content then return end
 
 local success, Games = pcall(function()
@@ -17,3 +17,4 @@ if scriptURL then
 else
     warn("No supported script found for this game. GameId: " .. gameId .. ", PlaceId: " .. placeId)
 end
+
