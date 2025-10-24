@@ -20,7 +20,7 @@ local Games = {
     -- Build a Zoo
     ["8066283370"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildAZoo.lua",
     -- Fish It
-    ["6701277882"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_FishIt.lua"
+    ["6701277882"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_FishIt.lua",
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua"
 }
