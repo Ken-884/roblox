@@ -24,7 +24,7 @@ local Games = {
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua",
     -- Dig to Earth
-    ["7468338447"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/DigtoEarthFinal.lua",
+    ["7468338447"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_DigtoEarthFinal.lua",
 }
 
 return Games
