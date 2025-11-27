@@ -2,7 +2,7 @@ local Games = {
     -- Anime Eternal
     ["7882829745"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeEternal.lua",
     -- Anime Fight
-    ["8469926548"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeFight.lua"
+    ["8469926548"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeFight.lua",
     -- Anime Ranger X
     ["6884266247"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeRangerX.lua",
     -- Arise Crossover
