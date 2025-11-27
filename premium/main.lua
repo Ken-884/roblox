@@ -1,20 +1,26 @@
-local gamelist_content = game:HttpGet("https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua")
-if not gamelist_content then return end
-
+-- Load GameList
 local success, Games = pcall(function()
-    return loadstring(gamelist_content)()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/gamelist.lua"))()
 end)
 
-if not success or type(Games) ~= "table" then return end
-
-local gameId = tostring(game.GameId)
-local placeId = tostring(game.PlaceId)
-
-local scriptURL = Games[gameId] or Games[placeId] -- check GameId first, then fallback to PlaceId
-
-if scriptURL then
-    loadstring(game:HttpGet(scriptURL))()
-else
-    warn("No supported script found for this game. GameId: " .. gameId .. ", PlaceId: " .. placeId)
+if not success or type(Games) ~= "table" then
+    warn("Failed to load GameList.")
+    return
 end
 
+-- Get current game's GameId
+local gameId = tostring(game.GameId)
+
+-- Find script URL
+local scriptUrl = Games[gameId]
+
+if scriptUrl then
+    local ok, err = pcall(function()
+        loadstring(game:HttpGet(scriptUrl))()
+    end)
+    if not ok then
+        warn("Failed to execute script: " .. tostring(err))
+    end
+else
+    warn("No script found for this game: " .. gameId)
+end
