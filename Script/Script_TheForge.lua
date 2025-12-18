@@ -727,7 +727,7 @@ LeftGroupbox:AddToggle("AutoMineToggle", {
 
 local autoFarmEnemy = false
 local enemyConnection = nil
-local selectedEnemyName = "Nearest"
+local selectedEnemyName = nil
 local enemyDropdown = nil
 local enemyYOffset = 7 -- default Y offset below enemy
 -- Separate sleep position choice for enemies (so enemies have their own Above/Below)
@@ -740,11 +740,14 @@ local function getEnemies()
     
     for _, child in ipairs(living:GetChildren()) do
         if child:IsA("Model") and child ~= Players.LocalPlayer.Character then
-            -- Check if it has a Humanoid and HumanoidRootPart
-            if child:FindFirstChild("Humanoid") and child:FindFirstChild("HumanoidRootPart") then
-                -- Optional: Check if alive
-                if child.Humanoid.Health > 0 then
-                    table.insert(enemies, child)
+            -- Only consider models that do NOT contain a 'Health' child (these are not targetable enemies)
+            if not child:FindFirstChild("Health") then
+                -- Check if it has a Humanoid and HumanoidRootPart
+                if child:FindFirstChild("Humanoid") and child:FindFirstChild("HumanoidRootPart") then
+                    -- Optional: Check if alive
+                    if child.Humanoid.Health > 0 then
+                        table.insert(enemies, child)
+                    end
                 end
             end
         end
@@ -833,42 +836,52 @@ local function startAutoFarming()
                 humanoid:ChangeState(Enum.HumanoidStateType.Physics)
             end
             
-            -- Only target the enemy selected in the dropdown
+            -- Target logic: prefer the selected enemy type; if none present, farm the nearest enemy.
             local enemies = getEnemies()
-            local filteredEnemies = {}
-            if selectedEnemyName then
-                for _, e in ipairs(enemies) do
-                    local baseName = string.match(e.Name, "^(.-)%d*$") or e.Name
-                    if baseName == selectedEnemyName then
-                        table.insert(filteredEnemies, e)
-                    end
-                end
+            local myPos = character.HumanoidRootPart.Position
+
+            local selName = nil
+            if type(selectedEnemyName) == "string" then
+                selName = selectedEnemyName
+            elseif type(selectedEnemyName) == "table" and #selectedEnemyName > 0 then
+                selName = selectedEnemyName[1]
             end
 
-            local nearestEnemy = nil
-            local minDist = math.huge
-            local myPos = character.HumanoidRootPart.Position
-            for _, enemy in ipairs(filteredEnemies) do
-                local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
-                if enemyRoot then
-                    local targetPos = enemyRoot.Position - Vector3.new(0, enemyYOffset, 0)
-                    local dist = (targetPos - myPos).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        nearestEnemy = enemy
+            local function findNearestInList(list)
+                local nearest, minDist = nil, math.huge
+                for _, enemy in ipairs(list) do
+                    local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+                    if enemyRoot and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                        local targetPos = enemyRoot.Position - Vector3.new(0, enemyYOffset, 0)
+                        local dist = (targetPos - myPos).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            nearest = enemy
+                        end
                     end
                 end
+                return nearest
             end
-            if nearestEnemy then
-                -- Always tween to enemy (no distance check)
-                tweenToEnemy(nearestEnemy)
-                
-                -- Attack loop while enemy is close and alive
-                if nearestEnemy and nearestEnemy.Parent and nearestEnemy:FindFirstChild("Humanoid") and nearestEnemy.Humanoid.Health > 0 then
-                    attackEnemy()
+
+            local targetEnemy = nil
+            if selName then
+                local selList = {}
+                for _, e in ipairs(enemies) do
+                    local baseName = string.match(e.Name, "^(.-)%d*$") or e.Name
+                    if baseName == selName then table.insert(selList, e) end
                 end
+                targetEnemy = findNearestInList(selList)
+            end
+
+            if not targetEnemy then
+                targetEnemy = findNearestInList(enemies)
+            end
+
+            if targetEnemy then
+                local ok = pcall(function() tweenToEnemy(targetEnemy) end)
+                if ok then attackEnemy() end
             else
-                task.wait(0.5) -- Wait if no enemies found
+                task.wait(0.5)
             end
         end)
     end)
@@ -1031,7 +1044,7 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
             if e and e.Name then
                 local baseName = string.match(e.Name, "^(.-)%d*$") or e.Name
                 local healthObj = e:FindFirstChild("Health")
-                if not (healthObj and healthObj:IsA("Script")) and not seen[baseName] then
+                if not healthObj and not seen[baseName] then
                     seen[baseName] = true
                     table.insert(names, baseName)
                     found = found + 1
@@ -1041,8 +1054,9 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
         print("[DEBUG] Enemy dropdown found " .. found .. " unique enemy types.")
         enemyDropdown:SetValues(names)
         pcall(function()
-            local current = selectedEnemyName or "Nearest"
-            enemyDropdown:SetValue(current)
+            local current = selectedEnemyName
+            if not current and #names > 0 then current = names[1] end
+            if current then enemyDropdown:SetValue(current) end
         end)
     end
 
