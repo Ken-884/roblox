@@ -194,7 +194,7 @@ local areaDropdown = LeftGroupbox:AddDropdown("AreaSelect", {
     Values = areaDropdownValues,
     Default = 1,
     Multi = false,
-    Tooltip = "Select an area to view available rocks",
+    Tooltip = "Choose the game area to list available rocks to mine",
     Callback = function(value)
         task.spawn(function()
             pcall(function()
@@ -232,7 +232,7 @@ rockDropdown = LeftGroupbox:AddDropdown("RockSelect", {
     Values = {},
     Default = 1,
     Multi = false,
-    Tooltip = "Select a rock type from the chosen area",
+    Tooltip = "Choose which rock type you want the script to mine",
     Callback = function(value)
         selectedRock = value
         if selectedArea then
@@ -344,7 +344,7 @@ LeftGroupbox:AddSlider("MiningOffset", {
     Min = 1,
     Max = 20,
     Rounding = 0,
-    Tooltip = "How far below the rock to mine (studs)",
+    Tooltip = "Distance (in studs) below the rock where your character will be positioned to mine",
     Callback = function(value)
         miningOffset = value
     end
@@ -358,7 +358,7 @@ LeftGroupbox:AddDropdown("SleepPositionDropdown", {
     Values = {"Above", "Below"},
     Default = 1,
     Multi = false,
-    Tooltip = "Choose sleep orientation for auto-mining: Above=face down, Below=face up",
+    Tooltip = "Choose how your character will be positioned when idle near the rock (Above = face down, Below = face up)",
     Callback = function(value)
         sleepPositionChoice = value
         -- If auto-mining is active, immediately retween to apply the new choice
@@ -611,7 +611,7 @@ end
 LeftGroupbox:AddToggle("AutoMineToggle", {
     Text = "Auto Mine Selected Rock",
     Default = false,
-    Tooltip = "Automatically mines the selected rock in the selected area",
+    Tooltip = "Automatically move to and mine the chosen rock in the selected area",
     Callback = function(value)
         autoMining = value
         
@@ -957,7 +957,7 @@ end
 RightGroupbox:AddToggle("AutoFarmEnemyToggle", {
     Text = "Auto Farm Enemies",
     Default = false,
-    Tooltip = "Automatically tweens to and attacks enemies",
+    Tooltip = "Automatically move to targeted enemies and attempt attacks",
     Callback = function(value)
         autoFarmEnemy = value
         
@@ -989,7 +989,7 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
     Values = {"Above", "Below"},
     Default = 1,
     Multi = false,
-    Tooltip = "Choose sleep orientation for auto-farming enemies: Above=face down, Below=face up",
+    Tooltip = "Choose how your character will be positioned when idle near the enemy (Above = face down, Below = face up)",
     Callback = function(value)
         enemySleepPositionChoice = value
         -- If auto-farming is active, immediately retween to apply new choice
@@ -1053,7 +1053,7 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
         Values = {},
         Default = 1,
         Multi = false,
-        Tooltip = "Select which enemy type to target",
+        Tooltip = "Select which enemy type the auto-farm should target",
         Callback = function(value)
             selectedEnemyName = value
         end
@@ -1066,7 +1066,7 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
         Min = 0,
         Max = 20,
         Rounding = 0,
-        Tooltip = "How far below the enemy to position (studs)",
+        Tooltip = "Distance (in studs) to position below the enemy while farming",
         Callback = function(value)
             enemyYOffset = value
         end
@@ -1101,7 +1101,7 @@ local pickaxeDropdown = BuySell:AddDropdown("PickaxeSelect", {
     Values = getPickaxesInProximity(),
     Default = 1,
     Multi = false,
-    Tooltip = "Select a pickaxe from workspace.Proximity",
+    Tooltip = "Choose a pickaxe to purchase or pick up from nearby vendors",
     Callback = function(value)
         selectedPickaxe = value
         print("Selected Pickaxe:", value)
@@ -1267,7 +1267,7 @@ end
     BuySell:AddToggle("AutoBuyPickaxeToggle", {
         Text = "Auto Buy Pickaxe",
         Default = false,
-        Tooltip = "Tween to selected pickaxe in workspace.Proximity at fixed speed",
+        Tooltip = "Move to the selected pickaxe so you can obtain it",
         Callback = function(value)
             buyPickaxeEnabled = value
             if value then
@@ -1438,7 +1438,7 @@ sellOreDropdown = BuySell:AddDropdown("SellOreSelect", {
     Values = getOreNames(),
     Default = 1,
     Multi = false,
-    Tooltip = "Select an ore/rock to auto-sell",
+    Tooltip = "Choose which ore type to automatically sell",
     Callback = function(value)
         selectedSellOre = value
     end
@@ -1458,7 +1458,7 @@ end
 BuySell:AddToggle("AutoSellOreToggle", {
     Text = "Auto Sell Selected Ore",
     Default = false,
-    Tooltip = "Automatically sell the selected ore using the SellConfirm command",
+    Tooltip = "Automatically sell the chosen ore to the vendor when available",
     Callback = function(value)
         sellOreEnabled = value
         if value then
@@ -1495,7 +1495,7 @@ local potionDropdown = BuySell:AddDropdown("PotionSelect", {
     Values = getPotionsInProximity(),
     Default = 1,
     Multi = false,
-    Tooltip = "Select a potion from workspace.Proximity",
+    Tooltip = "Choose a potion to buy from nearby vendors",
     Callback = function(value)
         selectedPotion = value
         print("Selected Potion:", value)
@@ -1622,7 +1622,7 @@ end
 BuySell:AddToggle("AutoBuyPotionToggle", {
     Text = "Auto Buy Potion",
     Default = false,
-    Tooltip = "Tween to selected potion Handle in workspace.Proximity and purchase it",
+    Tooltip = "Move to the selected potion and purchase it automatically",
     Callback = function(value)
         buyPotionEnabled = value
         if value then
@@ -1821,7 +1821,7 @@ end
 AutoForge:AddToggle("PerfectForgeToggle", {
     Text = "Perfect Forge",
     Default = false,
-    Tooltip = "Automatically complete Forge minigames when they appear",
+    Tooltip = "Automatically complete Forge minigames when they appear on screen",
     Callback = function(value)
         perfectForgeEnabled = value
         if value then
@@ -2158,7 +2158,7 @@ PlayerSettings:AddSlider("WalkSpeed", {
     Min = 0,
     Max = 300,
     Rounding = 0,
-    Tooltip = "Sets your humanoid walk speed",
+    Tooltip = "Set your character's walk speed (affects movement)",
     Callback = function(value)
         walkSpeedValue = value
         if Players.LocalPlayer and Players.LocalPlayer.Character then
@@ -2179,7 +2179,7 @@ PlayerSettings:AddSlider("FlySpeed", {
     Min = 0,
     Max = 500,
     Rounding = 0,
-    Tooltip = "Speed used while flying",
+    Tooltip = "Movement speed applied while flying",
     Callback = function(value)
         flySpeed = value
     end
@@ -2275,7 +2275,7 @@ end
 PlayerSettings:AddToggle("FlyToggle", {
     Text = "Fly (Simple)",
     Default = flyEnabled,
-    Tooltip = "Enable a simple fly mode (WASD + Space/Ctrl)",
+    Tooltip = "Toggle a simple fly mode (use WASD to move, Space/Ctrl to go up/down)",
     Callback = function(value)
         flyEnabled = value
         if flyEnabled then
@@ -2299,7 +2299,7 @@ Settings:AddToggle("KeybindMenuOpen", {
 Settings:AddToggle("AutoHideUI", {
     Text = "Auto Hide UI",
     Default = config.AutoHideUIEnabled or false,
-    Tooltip = "Automatically hide the UI on script load",
+    Tooltip = "Automatically hide the script UI when the script loads",
     Callback = function(value)
         autoHideUIEnabled = value
         if value then
@@ -2510,7 +2510,7 @@ local fpsScreenOverlay = nil
 Settings:AddToggle("FPSScreenOverlay", {
     Text = "White/Black Screen (Max FPS)",
     Default = false,
-    Tooltip = "Covers screen with solid color for max FPS.",
+    Tooltip = "Cover the screen with a solid color to improve FPS (reduces rendering)",
     Callback = function(enabled)
         local CoreGui = game:GetService("CoreGui")
         if enabled then
