@@ -2,7 +2,7 @@ getgenv().SeisenHubRunning = true
 
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
-    Text = "Anime Eternal Script Loaded";
+    Text = "The Forge Script Loaded";
     Duration = 10; -- seconds
 })
 game.StarterGui:SetCore("SendNotification", {
@@ -53,7 +53,7 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 Library.ShowToggleFrameInKeybinds = true
 local Window = Library:CreateWindow({
     Title = "Seisen Hub",
-    Footer = "Anime Eternal",
+    Footer = "The Forge",
     ToggleKeybind = Enum.KeyCode.LeftAlt,
     Center = true,
     Icon = 125926861378074,
@@ -88,7 +88,7 @@ SaveManager:SetIgnoreIndexes({
     "OutlineColorPicker",
     "FontColorPicker"
 }) -- Ignore UI theme related settings
-SaveManager:SetFolder("SeisenHub/AnimeEternal")
+SaveManager:SetFolder("SeisenHub/TheForge")
 SaveManager:SetSubFolder("Configs") -- Optional subfolder for better organization
 SaveManager:BuildConfigSection(UiSettingsTab)
 
@@ -99,7 +99,7 @@ ThemeManager:ApplyToTab(UiSettingsTab)
 
 InfoGroup:AddLabel("Script by: Seisen")
 InfoGroup:AddLabel("Version: 8.0.0")
-InfoGroup:AddLabel("Game: Anime Eternal")
+InfoGroup:AddLabel("Game: The Forge")
 
 -- Show current config status
 local currentConfig = SaveManager:GetAutoloadConfig()
