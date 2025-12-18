@@ -30,7 +30,8 @@ local Games = {
     -- Swordburst 3 floors
     ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Swordburst3.lua",
     -- The Forge
-    ["7671049560"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_TheForge.lua"
+    ["7671049560"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/Script/TheForgeFinal.lua"
 }
 
 return Games
+
