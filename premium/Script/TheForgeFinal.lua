@@ -2,7 +2,7 @@ getgenv().SeisenHubRunning = true
 
 game.StarterGui:SetCore("SendNotification", {
     Title = "Seisen Hub";
-    Text = "The Forge Script Loaded";
+    Text = "Anime Eternal Script Loaded";
     Duration = 10; -- seconds
 })
 game.StarterGui:SetCore("SendNotification", {
@@ -53,7 +53,7 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 Library.ShowToggleFrameInKeybinds = true
 local Window = Library:CreateWindow({
     Title = "Seisen Hub",
-    Footer = "The Forge",
+    Footer = "Anime Eternal",
     ToggleKeybind = Enum.KeyCode.LeftAlt,
     Center = true,
     Icon = 125926861378074,
@@ -70,6 +70,7 @@ local LeftGroupbox = MainTab:AddLeftGroupbox("Auto Mine", "stone")
 local RightGroupbox = MainTab:AddRightGroupbox("Auto Farm", "bug")
 local BuySell = MainTab:AddRightGroupbox("Auto Buy/Sell", "shopping-cart")
 local AutoForge = MainTab:AddLeftGroupbox("Auto Forge", "anvil")
+local GoToArea = MainTab:AddLeftGroupbox("Go To Area", "location")
 
 local SettingsTab = Window:AddTab("Settings", "cog", "Script Settings")
 local PlayerSettings = SettingsTab:AddLeftGroupbox("Player Settings", "cog")
@@ -88,7 +89,7 @@ SaveManager:SetIgnoreIndexes({
     "OutlineColorPicker",
     "FontColorPicker"
 }) -- Ignore UI theme related settings
-SaveManager:SetFolder("SeisenHub/TheForge")
+SaveManager:SetFolder("SeisenHub/AnimeEternal")
 SaveManager:SetSubFolder("Configs") -- Optional subfolder for better organization
 SaveManager:BuildConfigSection(UiSettingsTab)
 
@@ -99,7 +100,7 @@ ThemeManager:ApplyToTab(UiSettingsTab)
 
 InfoGroup:AddLabel("Script by: Seisen")
 InfoGroup:AddLabel("Version: 8.0.0")
-InfoGroup:AddLabel("Game: The Forge")
+InfoGroup:AddLabel("Game: Anime Eternal")
 
 -- Show current config status
 local currentConfig = SaveManager:GetAutoloadConfig()
@@ -123,608 +124,710 @@ else
 end
 
 ---=======================================Main FeatureS=======================================---
+--================================================= Auto Mine Feature =================================================--
 
--- Services needed for auto-mining
+-- Auto Mine variables
+local autoMineEnabled = false
+local miningConnection = nil
+local selectedAreaName = nil
+local selectedRockName = nil
+local areaDropdown = nil
+local rockDropdown = nil
+local minePositionChoice = "Above"
+local mineDistance = 8
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
--- Dynamically build area list and dropdown values from workspace.Rocks
-local areaList = {}
-local areaDropdownValues = {}
-local rocksFolder = workspace:FindFirstChild("Rocks")
-if rocksFolder then
-    for _, child in ipairs(rocksFolder:GetChildren()) do
-        if child:IsA("Folder") or child:IsA("Model") then
-            areaList[child.Name] = child
-            table.insert(areaDropdownValues, child.Name)
-        end
+-- Ensure a safe cancel helper exists (other code calls this)
+if not cancelCurrentTween then
+    function cancelCurrentTween()
+        pcall(function()
+            if currentTween then
+                currentTween:Cancel()
+                currentTween = nil
+            end
+        end)
     end
-    table.sort(areaDropdownValues)
 end
 
-local selectedArea = nil
-local selectedRock = nil
-local rockDropdown = nil
+-- Get list of areas under workspace.Rocks
+local function getRockAreas()
+    local areas = {}
+    local rocksRoot = workspace:FindFirstChild("Rocks")
+    if not rocksRoot then return areas end
+    for _, a in ipairs(rocksRoot:GetChildren()) do
+        table.insert(areas, a.Name)
+    end
+    table.sort(areas)
+    return areas
+end
 
--- Function to get all rocks from a specific area
-local function getRocksFromArea(areaFolder)
+-- Helper: find rock parts/models inside an area, prefer those inside a Spawn/SpawnLocation descendant
+local function getRocksInArea(areaName)
     local rocks = {}
-    if not areaFolder then return rocks end
-    
-    pcall(function()
-        for _, child in ipairs(areaFolder:GetChildren()) do
-            -- Check if it's a SpawnLocation or any container
-            if child:IsA("Model") or child:IsA("Folder") or child:IsA("BasePart") then
-                -- Try to get children of this object
-                pcall(function()
-                    for _, rock in ipairs(child:GetChildren()) do
-                        if rock:IsA("Model") then
-                            -- Add the rock name
-                            table.insert(rocks, rock.Name)
-                        end
-                    end
-                end)
-            end
-            
-            -- Also check if the child itself is a rock model
-            if child:IsA("Model") and (child.Name:find("Rock") or child.Name:find("Basalt") or child.Name:find("Core")) then
-                table.insert(rocks, child.Name)
-            end
-        end
-    end)
-    
-    -- Remove duplicates and sort
-    local uniqueRocks = {}
     local seen = {}
-    for _, rockName in ipairs(rocks) do
-        if not seen[rockName] then
-            seen[rockName] = true
-            table.insert(uniqueRocks, rockName)
+    local rocksRoot = workspace:FindFirstChild("Rocks")
+    if not rocksRoot then return rocks end
+    local area = rocksRoot:FindFirstChild(areaName)
+    if not area then return rocks end
+
+    -- Only include actual rock models or parts, not folders like SpawnLocation
+    for _, folder in ipairs(area:GetChildren()) do
+        for _, rock in ipairs(folder:GetChildren()) do
+            if (rock:IsA("Model") or rock:IsA("BasePart")) and not seen[rock.Name] then
+                seen[rock.Name] = true
+                table.insert(rocks, rock.Name)
+            end
         end
     end
-    table.sort(uniqueRocks)
-    
-    return uniqueRocks
+    table.sort(rocks)
+    return rocks
 end
 
--- Area Dropdown
-local areaDropdown = LeftGroupbox:AddDropdown("AreaSelect", {
-    Text = "Select Area",
-    Values = areaDropdownValues,
-    Default = 1,
-    Multi = false,
-    Tooltip = "Choose the game area to list available rocks to mine",
-    Callback = function(value)
-        task.spawn(function()
-            pcall(function()
-                selectedArea = areaList[value]
-                
-                if not selectedArea then 
-                    print("Warning: Area not found for:", value)
-                    return 
-                end
-                
-                -- Update rock dropdown with rocks from selected area
-                if rockDropdown then
-                    local rocksInArea = getRocksFromArea(selectedArea)
-                    
-                    if rocksInArea and #rocksInArea > 0 then
-                        rockDropdown:SetValues(rocksInArea)
-                        task.wait(0.1) -- Small delay before setting value
-                        pcall(function()
-                            rockDropdown:SetValue(rocksInArea[1])
-                        end)
-                        print("Area selected:", value, "- Found", #rocksInArea, "rock types")
+-- Find a physical part to tween to for given area and rock name. Returns BasePart or nil
+local function findRockParts(areaName, rockName)
+    -- Returns a list of all available BaseParts for the given rockName in the area, searching all folders
+    local rocksRoot = workspace:FindFirstChild("Rocks")
+    if not rocksRoot then return {} end
+    local area = rocksRoot:FindFirstChild(areaName)
+    if not area then return {} end
+
+    local candidates = {}
+    for _, folder in ipairs(area:GetChildren()) do
+        for _, d in ipairs(folder:GetChildren()) do
+            if d.Name == rockName then
+                if d:IsA("BasePart") then
+                    table.insert(candidates, d)
+                elseif d:IsA("Model") then
+                    -- Only add the PrimaryPart or first BasePart descendant, not the folder itself
+                    if d.PrimaryPart and d.PrimaryPart:IsA("BasePart") then
+                        table.insert(candidates, d.PrimaryPart)
                     else
-                        rockDropdown:SetValues({"No rocks found"})
-                        print("Area selected:", value, "- No rocks found")
-                    end
-                end
-            end)
-        end)
-    end
-})
-
--- Rock Dropdown (initially empty until area is selected)
-rockDropdown = LeftGroupbox:AddDropdown("RockSelect", {
-    Text = "Select Rock",
-    Values = {},
-    Default = 1,
-    Multi = false,
-    Tooltip = "Choose which rock type you want the script to mine",
-    Callback = function(value)
-        selectedRock = value
-        if selectedArea then
-            print("Selected Rock:", selectedRock, "in Area:", tostring(selectedArea))
-        else
-            print("Selected Rock:", selectedRock)
-        end
-    end
-})
-
--- Initialize with first area
-if areaList["Island 2 Cave Danger 1"] then
-    selectedArea = areaList["Island 2 Cave Danger 1"]
-    local initialRocks = getRocksFromArea(selectedArea)
-    rockDropdown:SetValues(initialRocks)
-    if #initialRocks > 0 then
-        rockDropdown:SetValue(initialRocks[1])
-    end
-end
-
--- Helpers to refresh area and rock dropdowns when world changes
-local _areaListeners = {}
-local function refreshRockDropdown(areaFolder)
-    if not rockDropdown then return end
-    local values = {}
-    if areaFolder then
-        values = getRocksFromArea(areaFolder)
-    end
-    rockDropdown:SetValues(values)
-    pcall(function()
-        if selectedRock and table.find(values, selectedRock) then
-            rockDropdown:SetValue(selectedRock)
-        elseif #values > 0 then
-            rockDropdown:SetValue(values[1])
-            selectedRock = values[1]
-        else
-            rockDropdown:SetValue("No rocks found")
-            selectedRock = nil
-        end
-    end)
-end
-
-local function refreshAreaDropdown()
-    local rocksFolder = workspace:FindFirstChild("Rocks")
-    local names = {}
-    areaList = {}
-    if rocksFolder then
-        for _, child in ipairs(rocksFolder:GetChildren()) do
-            if child:IsA("Folder") or child:IsA("Model") then
-                areaList[child.Name] = child
-                table.insert(names, child.Name)
-            end
-        end
-        table.sort(names)
-    end
-    if areaDropdown then
-        areaDropdown:SetValues(names)
-        pcall(function()
-            if selectedArea and selectedArea.Name and areaList[selectedArea.Name] then
-                areaDropdown:SetValue(selectedArea.Name)
-            elseif #names > 0 then
-                areaDropdown:SetValue(names[1])
-                selectedArea = areaList[names[1]]
-            end
-        end)
-    end
-
-    -- reconnect listeners for each area to refresh rocks when children change
-    for _, conn in ipairs(_areaListeners) do
-        pcall(function() conn:Disconnect() end)
-    end
-    _areaListeners = {}
-    if rocksFolder then
-        for _, folder in pairs(areaList) do
-            pcall(function()
-                table.insert(_areaListeners, folder.ChildAdded:Connect(function() if folder == selectedArea then refreshRockDropdown(folder) end end))
-                table.insert(_areaListeners, folder.ChildRemoved:Connect(function() if folder == selectedArea then refreshRockDropdown(folder) end end))
-            end)
-        end
-    end
-    -- Refresh rocks for current selection
-    pcall(function() refreshRockDropdown(selectedArea) end)
-end
-
--- Hook world changes: Rocks folder and Living folder for enemies
-pcall(function()
-    local rocksFolder = workspace:FindFirstChild("Rocks")
-    if rocksFolder then
-        rocksFolder.ChildAdded:Connect(function() refreshAreaDropdown() end)
-        rocksFolder.ChildRemoved:Connect(function() refreshAreaDropdown() end)
-    end
-    local living = workspace:FindFirstChild("Living")
-    if living then
-        living.ChildAdded:Connect(function() pcall(function() refreshEnemyDropdown() end) end)
-        living.ChildRemoved:Connect(function() pcall(function() refreshEnemyDropdown() end) end)
-    end
-end)
-
--- Initial refresh to ensure dropdowns are up-to-date
-refreshAreaDropdown()
-
--- Auto Mine Toggle
--- Global mining offset (vertical distance below the rock)
-local miningOffset = 4
-
-LeftGroupbox:AddSlider("MiningOffset", {
-    Text = "Auto Mine Distance",
-    Default = 5,
-    Min = 1,
-    Max = 20,
-    Rounding = 0,
-    Tooltip = "Distance (in studs) below the rock where your character will be positioned to mine",
-    Callback = function(value)
-        miningOffset = value
-    end
-})
-
--- Sleep position choice for mining/farming: "Above" -> face down, "Below" -> face up
-local sleepPositionChoice = "Above" -- default: Above (face down)
-
-LeftGroupbox:AddDropdown("SleepPositionDropdown", {
-    Text = "Position",
-    Values = {"Above", "Below"},
-    Default = 1,
-    Multi = false,
-    Tooltip = "Choose how your character will be positioned when idle near the rock (Above = face down, Below = face up)",
-    Callback = function(value)
-        sleepPositionChoice = value
-        -- If auto-mining is active, immediately retween to apply the new choice
-        pcall(function()
-            local pl = game:GetService("Players").LocalPlayer
-            if autoMining and selectedArea and selectedRock then
-                local rockModel = findNearestRockInArea(selectedArea, selectedRock, 120) or findRockInArea(selectedArea, selectedRock)
-                if rockModel and pl and pl.Character then
-                    local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
-                    local humanoid = pl.Character:FindFirstChildOfClass("Humanoid")
-                    if hrp then hrp.Anchored = false hrp.CanCollide = true end
-                    if humanoid then humanoid.PlatformStand = false humanoid.AutoRotate = true end
-                    pcall(function() tweenToRock(rockModel) end)
-                end
-            end
-        end)
-    end
-})
--- Global tween distance threshold (default 2)
-local autoMining = false
-local miningConnection = nil
-
-local function findRockInArea(areaFolder, rockName)
-    if not areaFolder or not rockName then return nil end
-    
-    local foundRock = nil
-    pcall(function()
-        for _, child in ipairs(areaFolder:GetChildren()) do
-            if child:IsA("Model") or child:IsA("Folder") or child:IsA("BasePart") then
-                for _, rock in ipairs(child:GetChildren()) do
-                    if rock:IsA("Model") and rock.Name == rockName then
-                        foundRock = rock
-                        return
-                    end
-                end
-            end
-            
-            if child:IsA("Model") and child.Name == rockName then
-                foundRock = child
-                return
-            end
-        end
-    end)
-    
-    return foundRock
-end
-
--- Find the nearest rock model of a given name inside an area folder.
--- Returns nil if none found within `maxRange` (in studs). Defaults to 150.
-local function findNearestRockInArea(areaFolder, rockName, maxRange)
-    if not areaFolder or not rockName then return nil end
-    maxRange = maxRange or 150
-    local pl = game:GetService("Players").LocalPlayer
-    if not pl or not pl.Character then return nil end
-    local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-
-    local best = nil
-    local bestDist = math.huge
-    pcall(function()
-        for _, child in ipairs(areaFolder:GetDescendants()) do
-            if child:IsA("Model") and child.Name == rockName then
-                local ok, pivotPos = pcall(function() return child:GetPivot().Position end)
-                if ok and pivotPos then
-                    local d = (pivotPos - hrp.Position).Magnitude
-                    if d < bestDist and d <= maxRange then
-                        bestDist = d
-                        best = child
-                    end
-                end
-            end
-        end
-    end)
-
-    -- Fallback: check direct children if none found
-    if not best then
-        pcall(function()
-            for _, child in ipairs(areaFolder:GetChildren()) do
-                if child:IsA("Model") and child.Name == rockName then
-                    local ok, pivotPos = pcall(function() return child:GetPivot().Position end)
-                    if ok and pivotPos then
-                        local d = (pivotPos - hrp.Position).Magnitude
-                        if d < bestDist and d <= maxRange then
-                            bestDist = d
-                            best = child
+                        for _, c in ipairs(d:GetDescendants()) do
+                            if c:IsA("BasePart") then table.insert(candidates, c) break end
                         end
                     end
                 end
             end
-        end)
+        end
     end
-
-    return best
+    return candidates
 end
 
-local function tweenToRock(rock)
-    local player = game:GetService("Players").LocalPlayer
+-- Helper: find all available BaseParts for a given rock name in all areas
+local function findRockPartsAllAreas(rockName)
+    local rocksRoot = workspace:FindFirstChild("Rocks")
+    if not rocksRoot then return {} end
+    local candidates = {}
+    for _, area in ipairs(rocksRoot:GetChildren()) do
+        for _, folder in ipairs(area:GetChildren()) do
+            for _, d in ipairs(folder:GetChildren()) do
+                if d.Name == rockName then
+                    if d:IsA("BasePart") then
+                        table.insert(candidates, d)
+                    elseif d:IsA("Model") then
+                        if d.PrimaryPart and d.PrimaryPart:IsA("BasePart") then
+                            table.insert(candidates, d.PrimaryPart)
+                        else
+                            for _, c in ipairs(d:GetDescendants()) do
+                                if c:IsA("BasePart") then table.insert(candidates, c) break end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return candidates
+end
+
+-- Helper: get rock health from a part or its ancestor model (reads the "Health" attribute)
+local function getRockHealth(part)
+    if not part then return nil end
+    local function tryGet(obj)
+        if not obj then return nil end
+        local ok, val = pcall(function() return obj:GetAttribute("Health") end)
+        if ok and val ~= nil then
+            return tonumber(val) or val
+        end
+        return nil
+    end
+    -- Check the part itself first
+    local health = tryGet(part)
+    if health then return health end
+    -- Walk up ancestors to find the model that holds the attribute
+    local parent = part.Parent
+    local depth = 0
+    while parent and depth < 10 do
+        health = tryGet(parent)
+        if health then return health end
+        parent = parent.Parent
+        depth = depth + 1
+    end
+    return nil
+end
+
+-- Tween to rock with sleeping pose and chosen above/below offset
+local function tweenToRock(part)
+    if not part then return false end
+    local player = Players.LocalPlayer
     if not player or not player.Character then return false end
-    
-    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
     local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-    if not humanoidRootPart or not humanoid then return false end
-    
-    -- Get rock position
-    local rockPosition = rock:GetPivot().Position
-    
-    -- Calculate target position based on sleepPositionChoice:
-    -- "Above" => position above the rock, "Below" => position below the rock
-    local verticalOffset = (sleepPositionChoice == "Below") and -math.abs(miningOffset) or math.abs(miningOffset)
-    local targetPosition = rockPosition + Vector3.new(0, verticalOffset, 0)
-    
-    -- Enable collisions for travel
-    humanoidRootPart.CanCollide = true
-    humanoidRootPart.Anchored = false
-    
-    -- Force sleep/ragdoll state
+    if not hrp or not humanoid then return false end
+
+    -- Compute vertical offset
+    local yOffset = tonumber(mineDistance) or 0
+    if minePositionChoice == "Below" then yOffset = -math.abs(yOffset) else yOffset = math.abs(yOffset) end
+    local targetPosition = part.Position + Vector3.new(0, yOffset, 0)
+
+    -- Prepare physics/sleep pose
     humanoid.PlatformStand = true
     humanoid:ChangeState(Enum.HumanoidStateType.Physics)
     humanoid.AutoRotate = false
-    
-    -- Build target CFrame so the character faces the rock.
-    -- Placing the HRP at `targetPosition` and orienting towards the rock ensures
-    -- "Above" (HRP above rock) will make the lookVector point down (face down),
-    -- and "Below" will make the lookVector point up (face up).
-    local targetCFrame = CFrame.new(targetPosition, rockPosition)
-    
-    -- Tween to position with collision enabled
-    local tweenService = game:GetService("TweenService")
-    local fixedSpeed = 40 -- studs per second (adjust as needed)
-    local distance = (humanoidRootPart.Position - targetPosition).Magnitude
-    local duration = math.max(0.1, distance / fixedSpeed)
-    local tweenInfo = TweenInfo.new(
-        duration,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut
-    )
-    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {
-        CFrame = targetCFrame
-    })
+    hrp.CanCollide = true
+    hrp.Anchored = false
+
+    local targetCFrame = CFrame.new(targetPosition, part.Position)
+
+    local fixedSpeed = 40
+    local distance = (hrp.Position - targetPosition).Magnitude
+    local duration = math.max(0.08, distance / fixedSpeed)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    currentTween = tween
     tween:Play()
     tween.Completed:Wait()
-    -- Once at destination, anchor and disable collision for mining
-    humanoidRootPart.Anchored = true
-    humanoidRootPart.CanCollide = false
-    -- Keep character in sleep position (don't restore state)
-    -- This keeps them lying down while mining
+    currentTween = nil
+
+    -- Anchor at destination and disable collisions for stability
+    hrp.Anchored = true
+    hrp.CanCollide = false
     return true
 end
 
-local function mineRock()
+
+-- Toggle for prioritizing nearby enemies
+local prioritizeEnemies = false
+LeftGroupbox:AddToggle("PrioritizeEnemiesToggle", {
+    Text = "Prioritize Nearby Enemies",
+    Default = false,
+    Tooltip = "If enabled, farm enemies near you before mining rocks.",
+    Callback = function(value)
+        prioritizeEnemies = value
+    end
+})
+
+-- (legacy) enemy priority distance is hardcoded below as 15
+
+-- Helper: get closest enemy (not localplayer) within a certain distance
+local function getClosestEnemy(maxDist)
+    maxDist = maxDist or 30 -- default to 30 if not provided
+    local living = workspace:FindFirstChild("Living")
+    local player = Players.LocalPlayer
+    local myChar = player and player.Character
+    local hrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not living or not hrp then return nil end
+    local closest, minDist = nil, maxDist
+    local myPos = hrp.Position
+    for _, model in ipairs(living:GetChildren()) do
+        if model:IsA("Model") and model ~= myChar then
+            -- prefer Humanoid.Health, but also support other health sources (e.g. model.Game.Health or NumberValue)
+            local function getModelHealth(m)
+                if not m then return nil end
+                -- 1) Humanoid Health
+                local ok, humanoid = pcall(function() return m:FindFirstChildOfClass("Humanoid") end)
+                if ok and humanoid and humanoid.Health ~= nil then
+                    return tonumber(humanoid.Health)
+                end
+                -- 2) child named "Game" that might have a Health property or be a NumberValue container
+                local g = m:FindFirstChild("Game")
+                if g then
+                    -- If `Game` is a NumberValue or contains a `Health` NumberValue
+                    if g:IsA("NumberValue") then
+                        return tonumber(g.Value)
+                    end
+                    local hv = g:FindFirstChild("Health")
+                    if hv and hv:IsA("NumberValue") then
+                        return tonumber(hv.Value)
+                    end
+                    -- try direct property access (some instances expose a Health field)
+                    local ok2, v = pcall(function() return g.Health end)
+                    if ok2 and v ~= nil then return tonumber(v) end
+                end
+                -- 3) model attribute "Health"
+                local ok3, attr = pcall(function() return m:GetAttribute("Health") end)
+                if ok3 and attr ~= nil then return tonumber(attr) end
+                return nil
+            end
+
+            local enemyHealth = getModelHealth(model)
+            local enemyRoot = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso") or model:FindFirstChild("UpperTorso")
+            if enemyHealth and enemyRoot and enemyHealth > 0 then
+                local enemyPos = enemyRoot.Position
+                -- Only consider horizontal (XZ) distance
+                local dist = ((Vector3.new(enemyPos.X, 0, enemyPos.Z)) - (Vector3.new(myPos.X, 0, myPos.Z))).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    closest = model
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function tweenToEnemy(enemy)
+    local player = Players.LocalPlayer
+    if not player or not player.Character then return false end
+    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoidRootPart or not humanoid then return false end
+    local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+    if not enemyRoot then return false end
+    -- Use same sleeping pose and distance as mining
+    local yOffset = tonumber(mineDistance) or 0
+    if minePositionChoice == "Below" then yOffset = -math.abs(yOffset) else yOffset = math.abs(yOffset) end
+    local targetPosition = enemyRoot.Position + Vector3.new(0, yOffset, 0)
+    humanoidRootPart.CanCollide = true
+    humanoidRootPart.Anchored = false
+    humanoid.PlatformStand = true
+    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    humanoid.AutoRotate = false
+    local targetCFrame = CFrame.new(targetPosition, enemyRoot.Position)
+    local tweenService = game:GetService("TweenService")
+    local fixedSpeed = 60
+    local distance = (humanoidRootPart.Position - targetPosition).Magnitude
+    local duration = math.max(0.1, distance / fixedSpeed)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    local tween = tweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+    currentTween = tween
+    tween:Play()
+    tween.Completed:Wait()
+    currentTween = nil
+    humanoidRootPart.Anchored = true
+    humanoidRootPart.CanCollide = false
+    return true
+end
+
+local function attackEnemy()
     pcall(function()
         local args = {
-            [1] = "Pickaxe"
+            [1] = "Weapon"
         }
-        
         game:GetService("ReplicatedStorage"):WaitForChild("Shared", 9e9):WaitForChild("Packages", 9e9):WaitForChild("Knit", 9e9):WaitForChild("Services", 9e9):WaitForChild("ToolService", 9e9):WaitForChild("RF", 9e9):WaitForChild("ToolActivated", 9e9):InvokeServer(unpack(args))
     end)
 end
 
+local lastRock = nil -- file scope so it can be reset from dropdown
 local function startAutoMining()
-    if miningConnection then
-        miningConnection:Disconnect()
-        miningConnection = nil
-    end
-    
+    if miningConnection then miningConnection:Disconnect() miningConnection = nil end
     miningConnection = RunService.Heartbeat:Connect(function()
-        if not autoMining then return end
+        if not autoMineEnabled then return end
         pcall(function()
-            if selectedArea and selectedRock then
-                local player = game:GetService("Players").LocalPlayer
-                local character = player and player.Character
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-                -- Only set PlatformStand if not already set
-                if humanoid and not humanoid.PlatformStand then
-                    humanoid.PlatformStand = true
-                    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-                end
-                -- Find the rock in the selected area
-                -- Prefer the nearest rock of the selected type (avoid traveling far)
-                local rock = findNearestRockInArea(selectedArea, selectedRock, 120) or findRockInArea(selectedArea, selectedRock)
-                if rock and rock.Parent then
-                    -- Only tween if not already close to the mining position
-                    -- Compute mining position based on `sleepPositionChoice` so Above/Below are consistent
-                    local verticalOffset = (sleepPositionChoice == "Below") and -math.abs(miningOffset) or math.abs(miningOffset)
-                    local miningPos = rock:GetPivot().Position + Vector3.new(0, verticalOffset, 0)
-                    local dist = humanoidRootPart and (humanoidRootPart.Position - miningPos).Magnitude or math.huge
-                    if not humanoidRootPart or dist > 2 then -- 2 studs threshold (fixed)
-                        tweenToRock(rock)
-                    end
-                    -- Mine the rock repeatedly while it exists and maintain sleep position
-                    local mineAttempts = 0
-                    while rock and rock.Parent and mineAttempts < 50 and autoMining do
-                        -- Only set PlatformStand if not already set
-                        if humanoid and not humanoid.PlatformStand then
-                            humanoid.PlatformStand = true
-                            humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+            local prioritized = false
+            if prioritizeEnemies then
+                local enemy = getClosestEnemy(15)
+                if enemy then
+                    prioritized = true
+                    local attempts = 0
+                    local maxAttempts = 6
+                    while attempts < maxAttempts do
+                        if not enemy or not enemy.Parent then break end
+                        local ehum = enemy:FindFirstChildOfClass("Humanoid")
+                        if not ehum or ehum.Health <= 0 then
+                            enemy = getClosestEnemy(15)
+                            if not enemy then break end
+                            attempts = attempts + 1
+                            -- try next enemy
+                        else
+                            -- Try to tween to current enemy (retry twice)
+                            local tweened = false
+                            for i = 1, 2 do
+                                local ok = pcall(function() tweenToEnemy(enemy) end)
+                                if ok then tweened = true break end
+                                task.wait(0.05)
+                            end
+                            if not tweened then break end
+
+                            attackEnemy()
+                            task.wait(0.25)
+
+                            -- Re-evaluate enemy health after attack
+                            ehum = enemy:FindFirstChildOfClass("Humanoid")
+                            if not ehum or ehum.Health <= 0 then
+                                -- Try to find another nearby alive enemy immediately
+                                local nextEnemy = getClosestEnemy(15)
+                                if nextEnemy and nextEnemy ~= enemy then
+                                    enemy = nextEnemy
+                                    attempts = attempts + 1
+                                    -- continue to next loop iteration to attack it
+                                else
+                                    -- No other enemy found; break to resume mining
+                                    break
+                                end
+                            else
+                                -- If another closer enemy appeared, transfer to it
+                                local closer = getClosestEnemy(15)
+                                if closer and closer ~= enemy then
+                                    enemy = closer
+                                    attempts = attempts + 1
+                                    -- continue to next loop iteration to handle new target
+                                else
+                                    -- Keep current pose and stop prioritizing for this heartbeat
+                                    break
+                                end
+                            end
                         end
-                        mineRock()
-                        task.wait(0.5)
-                        mineAttempts = mineAttempts + 1
                     end
-                    -- Wait a bit before looking for next rock
-                    task.wait(0.5)
-                else
-                    -- Rock not found or destroyed, wait before searching again
-                    task.wait(1)
+                    -- Restore player pose after enemy loop
+                    pcall(function()
+                        local pl = Players.LocalPlayer
+                        if pl and pl.Character then
+                            local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
+                            local humanoid = pl.Character:FindFirstChildOfClass("Humanoid")
+                            if hrp then hrp.Anchored = false hrp.CanCollide = true end
+                            if humanoid then
+                                humanoid.PlatformStand = false
+                                humanoid.AutoRotate = true
+                                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                            end
+                        end
+                    end)
+                    return
+                end
+            end
+            if not selectedAreaName or not selectedRockName then return end
+            local parts = findRockParts(selectedAreaName, selectedRockName)
+            local validParts = {}
+            for _, p in ipairs(parts) do
+                if p and p.Parent then
+                    local ok, health = pcall(function() return getRockHealth(p) end)
+                    if ok then
+                        if not health or (tonumber(health) and tonumber(health) > 0) then
+                            table.insert(validParts, p)
+                        end
+                    else
+                        table.insert(validParts, p)
+                    end
+                end
+            end
+            -- If no valid rocks in selected area, search all areas for the same rock name
+            local usingFallback = false
+            if #validParts == 0 then
+                local allParts = findRockPartsAllAreas(selectedRockName)
+                for _, p in ipairs(allParts) do
+                    if p and p.Parent then
+                        local ok, health = pcall(function() return getRockHealth(p) end)
+                        if ok then
+                            if not health or (tonumber(health) and tonumber(health) > 0) then
+                                table.insert(validParts, p)
+                            end
+                        else
+                            table.insert(validParts, p)
+                        end
+                    end
+                end
+                usingFallback = true
+            end
+            -- Only pick a new rock if lastRock is nil or invalid
+            if not lastRock or not lastRock.Parent then
+                lastRock = nil
+                -- Pick the closest valid part as the new target
+                local player = Players.LocalPlayer
+                local hrp = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                local minDist = math.huge
+                local closest = nil
+                for _, p in ipairs(validParts) do
+                    if hrp then
+                        local dist = (p.Position - hrp.Position).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            closest = p
+                        end
+                    else
+                        closest = p
+                        break
+                    end
+                end
+                lastRock = closest
+            end
+            -- If using fallback, check if selected area has the rock again and switch back if so
+            if usingFallback then
+                local selectedAreaParts = findRockParts(selectedAreaName, selectedRockName)
+                local found = false
+                for _, p in ipairs(selectedAreaParts) do
+                    if p and p.Parent then
+                        local ok, health = pcall(function() return getRockHealth(p) end)
+                        if ok then
+                            if not health or (tonumber(health) and tonumber(health) > 0) then
+                                found = true
+                                break
+                            end
+                        else
+                            found = true
+                            break
+                        end
+                    end
+                end
+                if found then
+                    -- force re-pick from selected area
+                    lastRock = nil
+                end
+            end
+
+            -- If there is a valid lastRock, try mining it. If it depletes, immediately transfer to another rock up to 3 times in the same heartbeat.
+            if lastRock and lastRock.Parent then
+                for attempt = 1, 3 do
+                    if not lastRock or not lastRock.Parent then break end
+                    -- Double-check the health before attempting
+                    local rockHealth = nil
+                    pcall(function() rockHealth = getRockHealth(lastRock) end)
+                    if rockHealth and tonumber(rockHealth) and tonumber(rockHealth) <= 0 then
+                        lastRock = nil
+                        break
+                    end
+
+                    local ok = pcall(function() tweenToRock(lastRock) end)
+                    if not ok then break end
+
+                    pcall(function()
+                        local args = {
+                            [1] = "Pickaxe";
+                        }
+                        game:GetService("ReplicatedStorage"):WaitForChild("Shared", 9e9):WaitForChild("Packages", 9e9):WaitForChild("Knit", 9e9):WaitForChild("Services", 9e9):WaitForChild("ToolService", 9e9):WaitForChild("RF", 9e9):WaitForChild("ToolActivated", 9e9):InvokeServer(unpack(args))
+                    end)
+
+                    task.wait(0.2) -- small delay to allow server to apply damage and update attribute
+
+                    -- After hitting, check health; if depleted, immediately pick next closest and continue loop
+                    local h = nil
+                    pcall(function() h = getRockHealth(lastRock) end)
+                    if h and tonumber(h) and tonumber(h) <= 0 then
+                        -- refresh validParts to exclude depleted
+                        local parts2 = findRockParts(selectedAreaName, selectedRockName)
+                        local nextClosest = nil
+                        local minDist2 = math.huge
+                        local pl = Players.LocalPlayer
+                        local hrp2 = pl and pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+                        for _, p in ipairs(parts2) do
+                            if p and p.Parent then
+                                local ok2, hp2 = pcall(function() return getRockHealth(p) end)
+                                if ok2 and (not hp2 or tonumber(hp2) and tonumber(hp2) > 0) then
+                                    if hrp2 then
+                                        local d = (p.Position - hrp2.Position).Magnitude
+                                        if d < minDist2 then minDist2 = d nextClosest = p end
+                                    else
+                                        nextClosest = p
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                        lastRock = nextClosest
+                        -- continue to next attempt which will mine the new lastRock
+                    else
+                        -- Not depleted yet; finish this heartbeat after resetting pose
+                        pcall(function()
+                            local pl = Players.LocalPlayer
+                            if pl and pl.Character then
+                                local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
+                                local humanoid = pl.Character:FindFirstChildOfClass("Humanoid")
+                                if hrp then hrp.Anchored = false hrp.CanCollide = true end
+                                if humanoid then
+                                    humanoid.PlatformStand = false
+                                    humanoid.AutoRotate = true
+                                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                                end
+                            end
+                        end)
+                        break
+                    end
                 end
             else
-                task.wait(1)
+                -- No valid rocks, clear lastRock and refresh dropdown
+                lastRock = nil
+                pcall(function()
+                    if rockDropdown then rockDropdown:SetValues(getRocksInArea(selectedAreaName)) end
+                end)
+                task.wait(0.5)
             end
         end)
     end)
 end
 
 local function stopAutoMining()
-    if miningConnection then
-        miningConnection:Disconnect()
-        miningConnection = nil
-    end
-    
-    -- Restore humanoid to normal state
+    if miningConnection then miningConnection:Disconnect() miningConnection = nil end
+    pcall(cancelCurrentTween)
     pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        if player and player.Character then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-            
-            -- Unanchor and enable collision first
-            if humanoidRootPart then
-                humanoidRootPart.Anchored = false
-                humanoidRootPart.CanCollide = true
-            end
-            
+        local pl = Players.LocalPlayer
+        if pl and pl.Character then
+            local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
+            local humanoid = pl.Character:FindFirstChildOfClass("Humanoid")
+            if hrp then hrp.Anchored = false hrp.CanCollide = true end
             if humanoid then
                 humanoid.PlatformStand = false
                 humanoid.AutoRotate = true
                 humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-                
-                -- Reset rotation to upright
-                if humanoidRootPart then
-                    local currentPos = humanoidRootPart.Position
-                    humanoidRootPart.CFrame = CFrame.new(currentPos)
-                end
             end
         end
     end)
 end
 
-LeftGroupbox:AddToggle("AutoMineToggle", {
-    Text = "Auto Mine Selected Rock",
-    Default = false,
-    Tooltip = "Automatically move to and mine the chosen rock in the selected area",
+-- UI: Area dropdown
+areaDropdown = LeftGroupbox:AddDropdown("MineAreaSelect", {
+    Text = "Select Mine Area",
+    Values = getRockAreas(),
+    Default = 1,
+    Multi = false,
+    Tooltip = "Choose which area (folder inside workspace.Rocks) to mine",
     Callback = function(value)
-        autoMining = value
-        
-        if value then
-            if not selectedArea or not selectedRock then
-                autoMining = false
-                return
-            end
-            -- Fire the EquipAchievement event for mining when enabling auto-mine,
-            -- but only if the Achievements UI shows "Equip Skill"
-            pcall(function()
-                local function getEquipTitleText()
-                    local ok, txt = pcall(function()
-                        local player = game:GetService("Players").LocalPlayer
-                        if not player then return nil end
-                        local gui = player:FindFirstChild("PlayerGui")
-                        if not gui then return nil end
-                        local menu = gui:FindFirstChild("Menu")
-                        if not menu then return nil end
-                        local frame = menu:FindFirstChild("Frame")
-                        if not frame then return nil end
-                        local inner = frame:FindFirstChild("Frame")
-                        if not inner then return nil end
-                        local menus = inner:FindFirstChild("Menus")
-                        if not menus then return nil end
-                        local achievements = menus:FindFirstChild("Achievements")
-                        if not achievements then return nil end
-                        local achChildren = achievements:FindFirstChild("Achievements") or achievements
-                        local playtime = achChildren:FindFirstChild("playtime")
-                        if not playtime then return nil end
-                        local equipBoost = playtime:FindFirstChild("EquipBoost")
-                        if not equipBoost then return nil end
-                        local eqFrame = equipBoost:FindFirstChild("Frame")
-                        if not eqFrame then return nil end
-                        local title = eqFrame:FindFirstChild("Title")
-                        if not title then return nil end
-                        return title.Text
-                    end)
-                    if ok then return txt end
-                    return nil
-                end
+        selectedAreaName = value
+        -- refresh rock list when area changes
+        pcall(function()
+            if rockDropdown then rockDropdown:SetValues(getRocksInArea(selectedAreaName)) end
+        end)
+    end
+})
 
-                local titleText = getEquipTitleText()
-                if titleText == "Equip Skill" then
-                    local args = {[1] = "playtime"}
-                    local rep = game:GetService("ReplicatedStorage")
-                    local ev = rep:WaitForChild("Shared", 9e9)
-                        :WaitForChild("Packages", 9e9)
-                        :WaitForChild("Knit", 9e9)
-                        :WaitForChild("Services", 9e9)
-                        :WaitForChild("AchievementService", 9e9)
-                        :WaitForChild("RE", 9e9)
-                        :WaitForChild("EquipAchievement", 9e9)
-                    ev:FireServer(unpack(args))
+-- UI: Rock dropdown
+rockDropdown = LeftGroupbox:AddDropdown("MineRockSelect", {
+    Text = "Select Rock",
+    Values = {},
+    Default = 1,
+    Multi = false,
+    Tooltip = "Choose the rock type inside the selected area to tween to",
+    Callback = function(value)
+        selectedRockName = value
+        -- If Auto Mine is enabled, immediately update mining target and reset lastRock
+        if autoMineEnabled then
+            lastRock = nil
+        end
+    end
+})
+
+-- Real-time rock dropdown updater
+local lastRockList = nil
+task.spawn(function()
+    while true do
+        task.wait(1.0) -- Check every second
+        if selectedAreaName and rockDropdown then
+            local currentRocks = getRocksInArea(selectedAreaName)
+            -- Always show the last selected rock name, even if not available
+            if selectedRockName and selectedRockName ~= "" and not table.find(currentRocks, selectedRockName) then
+                table.insert(currentRocks, selectedRockName)
+            end
+            -- Only update if the list has changed
+            local changed = false
+            if not lastRockList or #lastRockList ~= #currentRocks then
+                changed = true
+            else
+                for i, v in ipairs(currentRocks) do
+                    if lastRockList[i] ~= v then changed = true break end
+                end
+            end
+            if changed then
+                rockDropdown:SetValues(currentRocks)
+                lastRockList = currentRocks
+                -- If the currently selected rock is gone, select the first available
+                if selectedRockName == nil or not table.find(currentRocks, selectedRockName) then
+                    selectedRockName = currentRocks[1]
+                    if selectedRockName then
+                        rockDropdown:SetValue(selectedRockName)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- UI: Position dropdown (Above/Below)
+LeftGroupbox:AddDropdown("MinePositionDropdown", {
+    Text = "Mine Position",
+    Values = {"Above", "Below"},
+    Default = 1,
+    Multi = false,
+    Tooltip = "Choose whether to tween above or below the rock (sleep pose)",
+    Callback = function(value)
+        minePositionChoice = value
+    end
+})
+
+-- UI: Distance slider
+LeftGroupbox:AddSlider("MineDistance", {
+    Text = "Distance From Rock",
+    Default = mineDistance,
+    Min = 0,
+    Max = 20,
+    Rounding = 0,
+    Tooltip = "Vertical distance (studs) between you and the rock when positioned",
+    Callback = function(value)
+        mineDistance = value
+    end
+})
+
+-- Toggle to start/stop auto mine
+LeftGroupbox:AddToggle("AutoMineToggle", {
+    Text = "Auto Mine",
+    Default = false,
+    Tooltip = "Automatically tween to the selected rock inside the selected area",
+    Callback = function(value)
+        autoMineEnabled = value
+        if value then
+            if not selectedAreaName then
+                -- set default area if possible
+                local areas = getRockAreas()
+                if #areas > 0 then
+                    selectedAreaName = areas[1]
+                    pcall(function() areaDropdown:SetValue(selectedAreaName) end)
+                end
+            end
+            -- populate rocks dropdown
+            pcall(function()
+                if selectedAreaName then rockDropdown:SetValues(getRocksInArea(selectedAreaName)) end
+                if not selectedRockName then
+                    local rvals = getRocksInArea(selectedAreaName)
+                    if rvals and #rvals > 0 then
+                        selectedRockName = rvals[1]
+                        rockDropdown:SetValue(selectedRockName)
+                    end
                 end
             end)
+
             startAutoMining()
         else
-            -- Fire the EquipAchievement event for mining when disabling auto-mine,
-            -- but only if the Achievements UI shows "Unequip Skill"
-            pcall(function()
-                local function getEquipTitleText()
-                    local ok, txt = pcall(function()
-                        local player = game:GetService("Players").LocalPlayer
-                        if not player then return nil end
-                        local gui = player:FindFirstChild("PlayerGui")
-                        if not gui then return nil end
-                        local menu = gui:FindFirstChild("Menu")
-                        if not menu then return nil end
-                        local frame = menu:FindFirstChild("Frame")
-                        if not frame then return nil end
-                        local inner = frame:FindFirstChild("Frame")
-                        if not inner then return nil end
-                        local menus = inner:FindFirstChild("Menus")
-                        if not menus then return nil end
-                        local achievements = menus:FindFirstChild("Achievements")
-                        if not achievements then return nil end
-                        local achChildren = achievements:FindFirstChild("Achievements") or achievements
-                        local playtime = achChildren:FindFirstChild("playtime")
-                        if not playtime then return nil end
-                        local equipBoost = playtime:FindFirstChild("EquipBoost")
-                        if not equipBoost then return nil end
-                        local eqFrame = equipBoost:FindFirstChild("Frame")
-                        if not eqFrame then return nil end
-                        local title = eqFrame:FindFirstChild("Title")
-                        if not title then return nil end
-                        return title.Text
-                    end)
-                    if ok then return txt end
-                    return nil
-                end
-
-                local titleText = getEquipTitleText()
-                if titleText == "Unequip Skill" then
-                    local args = {[1] = "playtime"}
-                    local rep = game:GetService("ReplicatedStorage")
-                    local ev = rep:WaitForChild("Shared", 9e9)
-                        :WaitForChild("Packages", 9e9)
-                        :WaitForChild("Knit", 9e9)
-                        :WaitForChild("Services", 9e9)
-                        :WaitForChild("AchievementService", 9e9)
-                        :WaitForChild("RE", 9e9)
-                        :WaitForChild("EquipAchievement", 9e9)
-                    ev:FireServer(unpack(args))
-                end
-            end)
             stopAutoMining()
         end
     end
 })
 
---================================================= Auto Farm Enemy Feature =================================================--
+-- Initialize area dropdown default
+do
+    local init = getRockAreas()
+    if init and #init > 0 then
+        selectedAreaName = init[1]
+        pcall(function() if areaDropdown and areaDropdown.SetValue then areaDropdown:SetValue(selectedAreaName) end end)
+        pcall(function() if rockDropdown and rockDropdown.SetValues then rockDropdown:SetValues(getRocksInArea(selectedAreaName)) end end)
+        local r = getRocksInArea(selectedAreaName)
+        if r and #r > 0 then
+            selectedRockName = r[1]
+            pcall(function() if rockDropdown and rockDropdown.SetValue then rockDropdown:SetValue(selectedRockName) end end)
+        end
+    end
+end
 
+
+
+
+
+
+
+
+
+
+--================================================= Auto Farm Enemy Feature =================================================--
 local autoFarmEnemy = false
 local enemyConnection = nil
 local selectedEnemyName = nil
@@ -796,13 +899,39 @@ local function tweenToEnemy(enemy)
     local tween = tweenService:Create(humanoidRootPart, tweenInfo, {
         CFrame = targetCFrame
     })
+    currentTween = tween
     tween:Play()
-    tween.Completed:Wait()
-    
+    local _, playbackState = tween.Completed:Wait()
+    currentTween = nil
+    if playbackState == Enum.PlaybackState.Cancelled then
+        return false
+    end
+
     -- Anchor and disable collision for farming
     humanoidRootPart.Anchored = true
     humanoidRootPart.CanCollide = false
     return true
+end
+
+-- Soft-reset the player's character to recover from stuck states.
+local function softResetCharacter(character)
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoid then return end
+    pcall(function()
+        hrp.Anchored = false
+        hrp.CanCollide = true
+        humanoid.PlatformStand = false
+        humanoid.AutoRotate = true
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end)
+    task.wait(0.1)
+    pcall(function()
+        humanoid.PlatformStand = true
+        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        humanoid.AutoRotate = false
+    end)
 end
 
 local function attackEnemy()
@@ -820,6 +949,9 @@ local function startAutoFarming()
         enemyConnection = nil
     end
     
+    -- Keep track of last successful damage time so we can reset if attacks stop working
+    local lastSuccessfulHit = tick()
+
     enemyConnection = RunService.Heartbeat:Connect(function()
         if not autoFarmEnemy then return end
         
@@ -836,14 +968,10 @@ local function startAutoFarming()
                 humanoid:ChangeState(Enum.HumanoidStateType.Physics)
             end
             
-            -- Target logic:
-            -- 1) Try to find nearest enemy of the type selected in the dropdown.
-            -- 2) If none available, fallback to the nearest available enemy of any type.
-            -- 3) When the selected type appears again, the loop will automatically switch back.
+            -- Target logic: prefer the selected enemy type; if none present, farm the nearest enemy.
             local enemies = getEnemies()
             local myPos = character.HumanoidRootPart.Position
 
-            -- Normalize selected name (handle both string and single-element table)
             local selName = nil
             if type(selectedEnemyName) == "string" then
                 selName = selectedEnemyName
@@ -868,31 +996,102 @@ local function startAutoFarming()
             end
 
             local targetEnemy = nil
-            -- First try selected type
             if selName then
                 local selList = {}
                 for _, e in ipairs(enemies) do
                     local baseName = string.match(e.Name, "^(.-)%d*$") or e.Name
-                    if baseName == selName then
-                        table.insert(selList, e)
-                    end
+                    if baseName == selName then table.insert(selList, e) end
                 end
                 targetEnemy = findNearestInList(selList)
             end
 
-            -- Fallback to any nearest enemy if selected type not found
             if not targetEnemy then
                 targetEnemy = findNearestInList(enemies)
             end
 
             if targetEnemy then
+                -- Record previous health to detect damage
+                local prevHealth = nil
+                if targetEnemy and targetEnemy:FindFirstChild("Humanoid") then
+                    prevHealth = targetEnemy.Humanoid.Health
+                end
+
                 local ok = pcall(function() tweenToEnemy(targetEnemy) end)
                 if ok then
-                    -- Attack after tween
                     attackEnemy()
+                    -- Wait a short moment for server to apply damage
+                    task.wait(0.7)
+                    -- Check if damage occurred
+                    if targetEnemy and targetEnemy:FindFirstChild("Humanoid") then
+                        local cur = targetEnemy.Humanoid.Health
+                        if prevHealth and cur < prevHealth then
+                            lastSuccessfulHit = tick()
+                        end
+                    end
+                    -- If we've not seen damage for a while, soft-reset the character and retry
+                    if tick() - lastSuccessfulHit > 8 then
+                        -- Try soft-reset sequence first
+                        softResetCharacter(character)
+                        -- retry movement once
+                        pcall(function() tweenToEnemy(targetEnemy) end)
+                        attackEnemy()
+                        lastSuccessfulHit = tick()
+                    end
+
+                    -- If still no hits after a longer timeout, perform an automatic full restart
+                    if tick() - lastSuccessfulHit > 16 then
+                        -- Forceful reset sequence for long-running desyncs
+                        pcall(function() cancelCurrentTween() end)
+                        -- Disconnect the heartbeat connection if still present
+                        pcall(function()
+                            if enemyConnection then
+                                enemyConnection:Disconnect()
+                                enemyConnection = nil
+                            end
+                        end)
+
+                        -- Restore humanoid/HRP state to give server a clean starting point
+                        pcall(function()
+                            local pl = Players.LocalPlayer
+                            if pl and pl.Character then
+                                local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
+                                local humanoid = pl.Character:FindFirstChildOfClass("Humanoid")
+                                if hrp then
+                                    hrp.Anchored = false
+                                    hrp.CanCollide = true
+                                    hrp.CFrame = CFrame.new(hrp.Position)
+                                end
+                                if humanoid then
+                                    humanoid.PlatformStand = false
+                                    humanoid.AutoRotate = true
+                                    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                                end
+                                -- small pause to let server/character sync
+                                task.wait(0.2)
+                                if humanoid then
+                                    humanoid.PlatformStand = true
+                                    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                                    humanoid.AutoRotate = false
+                                end
+                            end
+                        end)
+
+                        -- small delay to allow cleanup and server-side sync
+                        task.wait(0.6)
+
+                        -- restart only if user still wants auto farm enabled
+                        if autoFarmEnemy then
+                            pcall(function()
+                                startAutoFarming()
+                            end)
+                        end
+
+                        -- reset the timestamp to avoid immediate repeat
+                        lastSuccessfulHit = tick()
+                    end
                 end
             else
-                task.wait(0.5) -- Wait if no enemies found
+                task.wait(0.5)
             end
         end)
     end)
@@ -903,6 +1102,9 @@ local function stopAutoFarming()
         enemyConnection:Disconnect()
         enemyConnection = nil
     end
+    -- Cancel any active movement tween immediately so player regains control
+    pcall(cancelCurrentTween)
+
     -- Restore humanoid state and force upright, above ground
     pcall(function()
         local player = Players.LocalPlayer
@@ -926,14 +1128,36 @@ local function stopAutoFarming()
             end
         end
     end)
+    -- Extra safety: re-apply restore a few times to ensure other code doesn't re-freeze player
+    pcall(function()
+        task.spawn(function()
+            local player = Players.LocalPlayer
+            for i = 1, 4 do
+                if not player or not player.Character then break end
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                pcall(function()
+                    if hrp then hrp.Anchored = false hrp.CanCollide = true end
+                    if humanoid then
+                        humanoid.PlatformStand = false
+                        humanoid.AutoRotate = true
+                        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    end
+                end)
+                task.wait(0.12)
+            end
+        end)
+    end)
 end
 
 -- Fire the EquipAchievement remote for weapon forging (safe pcall wrapper)
-local function fireEquipAchievement()
+-- Fire the EquipAchievement remote for weapon forging (disabled)
+-- Fire the EquipAchievement remote for weapon forging (safe pcall wrapper)
+local function fireEquipAchievement(name)
+    -- name: string name of the achievement to trigger. Defaults to weapon_forging
+    name = name or "weapon_forging"
     pcall(function()
-        local args = {
-            [1] = "weapon_forging",
-        }
+        local args = {[1] = name}
         local rep = game:GetService("ReplicatedStorage")
         local rf = rep:WaitForChild("Shared", 9e9)
             :WaitForChild("Packages", 9e9)
@@ -990,7 +1214,11 @@ RightGroupbox:AddToggle("AutoFarmEnemyToggle", {
             pcall(function()
                 local title = getWeaponForgingTitleText()
                 if title == "Equip Skill" then
-                    fireEquipAchievement()
+                    local args = {
+                        [1] = "weapon_forging";
+                    }
+
+                    game:GetService("ReplicatedStorage"):WaitForChild("Shared", 9e9):WaitForChild("Packages", 9e9):WaitForChild("Knit", 9e9):WaitForChild("Services", 9e9):WaitForChild("AchievementService", 9e9):WaitForChild("RE", 9e9):WaitForChild("EquipAchievement", 9e9):FireServer(unpack(args))
                 end
             end)
             startAutoFarming()
@@ -999,7 +1227,11 @@ RightGroupbox:AddToggle("AutoFarmEnemyToggle", {
             pcall(function()
                 local title = getWeaponForgingTitleText()
                 if title == "Unequip Skill" then
-                    fireEquipAchievement()
+                    local args = {
+                        [1] = "weapon_forging";
+                    }
+
+                    game:GetService("ReplicatedStorage"):WaitForChild("Shared", 9e9):WaitForChild("Packages", 9e9):WaitForChild("Knit", 9e9):WaitForChild("Services", 9e9):WaitForChild("AchievementService", 9e9):WaitForChild("RE", 9e9):WaitForChild("EquipAchievement", 9e9):FireServer(unpack(args))
                 end
             end)
             stopAutoFarming()
@@ -1055,7 +1287,6 @@ RightGroupbox:AddDropdown("EnemyPositionDropdown", {
             if e and e.Name then
                 local baseName = string.match(e.Name, "^(.-)%d*$") or e.Name
                 local healthObj = e:FindFirstChild("Health")
-                -- Skip entries that have a 'Health' child (not valid enemy types)
                 if not healthObj and not seen[baseName] then
                     seen[baseName] = true
                     table.insert(names, baseName)
@@ -1181,7 +1412,7 @@ end
         -- Noclip-style travel (disable collisions during tween) but do NOT change
         -- humanoid.PlatformStand or apply a sleeping rotation.
         local tweenService = TweenService
-        local fixedSpeed = 40
+        local fixedSpeed = 50
         local targetPos = part.Position + Vector3.new(0, 2, 0)
         local distance = (hrp.Position - targetPos).Magnitude
         local duration = math.max(0.05, distance / fixedSpeed)
@@ -1659,6 +1890,182 @@ BuySell:AddToggle("AutoBuyPotionToggle", {
             startBuyPotion()
         else
             stopBuyPotion()
+        end
+    end
+})
+
+--================================================= Proximity Targets (generic) =================================================--
+-- Dropdown showing children of workspace.Proximity excluding pickaxes and potions
+local function getProximityItems()
+    local items = {}
+    local prox = workspace:FindFirstChild("Proximity")
+    if not prox then return items end
+    for _, obj in ipairs(prox:GetChildren()) do
+        local name = obj.Name or ""
+        local lname = name:lower()
+        -- Exclude pickaxes and potions from this generic list
+        if not (lname:find("pickaxe") or lname:find("potion")) then
+            table.insert(items, name)
+        end
+    end
+    table.sort(items)
+    return items
+end
+
+local selectedProximityTarget = nil
+local proximityDropdown = GoToArea:AddDropdown("ProximitySelect", {
+    Text = "Select NPC's",
+    Values = getProximityItems(),
+    Default = 1,
+    Multi = false,
+    Tooltip = "Choose an object inside workspace.Proximity to move to (excludes pickaxes/potions)",
+    Callback = function(value)
+        selectedProximityTarget = value
+    end
+})
+
+do
+    local initial = getProximityItems()
+    if initial and #initial > 0 then
+        selectedProximityTarget = initial[1]
+        pcall(function()
+            if proximityDropdown and proximityDropdown.SetValue then proximityDropdown:SetValue(selectedProximityTarget) end
+        end)
+    end
+end
+
+local moveToProxEnabled = false
+local moveToProxConnection = nil
+local proximityFixedSpeed = 40 -- studs per second (fixed speed)
+
+local function tweenToProximityPart(part)
+    if not part then return false end
+    local player = Players.LocalPlayer
+    if not player or not player.Character then return false end
+    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+
+    -- Build target position slightly above the part for stability
+    local targetPos = part.Position + Vector3.new(0, 2, 0)
+    local distance = (hrp.Position - targetPos).Magnitude
+    local duration = math.max(0.05, distance / proximityFixedSpeed)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+
+    -- Disable collisions while moving to avoid getting stuck
+    pcall(function() hrp.CanCollide = false hrp.Anchored = false end)
+
+    local lookVec = hrp.CFrame.LookVector
+    local targetCFrame = CFrame.new(targetPos, targetPos + lookVec)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    currentTween = tween
+    tween:Play()
+    tween.Completed:Wait()
+    currentTween = nil
+
+    -- Anchor at destination and keep collisions disabled for stability
+    pcall(function() hrp.Anchored = true hrp.CanCollide = false end)
+    return true
+end
+
+local function startMoveToProximity()
+    if moveToProxConnection then moveToProxConnection:Disconnect() moveToProxConnection = nil end
+    moveToProxConnection = RunService.Heartbeat:Connect(function()
+        if not moveToProxEnabled then return end
+        pcall(function()
+            if not selectedProximityTarget then
+                moveToProxEnabled = false
+                return
+            end
+            local targetPart = getProximityTargetByName(selectedProximityTarget)
+            if targetPart then
+                local player = Players.LocalPlayer
+                local hrp = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local dist = (hrp.Position - targetPart.Position).Magnitude
+                    if dist > 3 then
+                        tweenToProximityPart(targetPart)
+                    end
+                    -- after arriving, disable the toggle so it doesn't keep moving
+                    moveToProxEnabled = false
+                    stopMoveToProximity()
+                    return
+                end
+            else
+                -- if target cannot be found, stop
+                moveToProxEnabled = false
+                stopMoveToProximity()
+                return
+            end
+        end)
+    end)
+end
+
+local function stopMoveToProximity()
+    if moveToProxConnection then
+        moveToProxConnection:Disconnect()
+        moveToProxConnection = nil
+    end
+    pcall(cancelCurrentTween)
+    -- restore collisions/unanchor
+    pcall(function()
+        local player = Players.LocalPlayer
+        if player and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                -- Anchor, move up, set upright, then unanchor
+                humanoidRootPart.Anchored = true
+                local pos = humanoidRootPart.Position
+                humanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y + 8, pos.Z)
+                task.wait(0.1)
+                humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position)
+                humanoidRootPart.Anchored = false
+                humanoidRootPart.CanCollide = true
+            end
+            if humanoid then
+                humanoid.PlatformStand = false
+                humanoid.AutoRotate = true
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+        end
+    end)
+    -- Extra safety: re-apply restore a few times to ensure other code doesn't re-freeze player
+    pcall(function()
+        task.spawn(function()
+            local player = Players.LocalPlayer
+            for i = 1, 4 do
+                if not player or not player.Character then break end
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                pcall(function()
+                    if hrp then hrp.Anchored = false hrp.CanCollide = true end
+                    if humanoid then
+                        humanoid.PlatformStand = false
+                        humanoid.AutoRotate = true
+                        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    end
+                end)
+                task.wait(0.12)
+            end
+        end)
+    end)
+end
+
+-- UI Toggle
+GoToArea:AddToggle("MoveToProximityToggle", {
+    Text = "Move To NPC",
+    Default = false,
+    Tooltip = "Tween to the selected object inside workspace.Proximity (fixed speed)",
+    Callback = function(value)
+        moveToProxEnabled = value
+        if value then
+            if not selectedProximityTarget then
+                moveToProxEnabled = false
+                return
+            end
+            startMoveToProximity()
+        else
+            stopMoveToProximity()
         end
     end
 })
@@ -2530,6 +2937,37 @@ Settings:AddToggle(
     }
 )
 
+-- Anti-AFK Toggle (prevents idle kick by simulating controller input)
+Settings:AddToggle("AntiAFKToggle", {
+    Text = "Anti AFK",
+    Default = config.AntiAFKToggle or false,
+    Tooltip = "Prevent being kicked for idling by simulating input",
+    Callback = function(value)
+        config.AntiAFKToggle = value
+        local Players = game:GetService("Players")
+        local vu = game:GetService("VirtualUser")
+        -- Always ensure previous connection is cleared
+        pcall(function()
+            if antiAFKConnection then
+                antiAFKConnection:Disconnect()
+                antiAFKConnection = nil
+            end
+        end)
+
+        if value then
+            -- Connect to Idled and simulate a simple click to prevent AFK kick
+            pcall(function()
+                antiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
+                    pcall(function()
+                        vu:CaptureController()
+                        vu:ClickButton2(Vector2.new(0, 0))
+                    end)
+                end)
+            end)
+        end
+    end
+})
+
 
 -- White/Black Screen FPS Toggle
 local fpsScreenOverlay = nil
@@ -2787,6 +3225,14 @@ Settings:AddButton("Unload Script", function()
         end
         if inputEndedConnection then
             inputEndedConnection:Disconnect()
+        end
+    end)
+    -- Disconnect Anti-AFK connection if present
+    pcall(function()
+        if antiAFKConnection then
+            antiAFKConnection:Disconnect()
+            antiAFKConnection = nil
+            print("🔒 Anti-AFK disconnected")
         end
     end)
     
