@@ -7,6 +7,8 @@ local Games = {
     ["6884266247"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AnimeRangerX.lua",
     -- Arise Crossover
     ["7074860883"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AriseCrossover.lua",
+    -- Arsenal
+    ["111958650"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Arsenal.lua"
     -- Blue Heater 2
     ["5803093656"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BlueHeater2.lua",
     -- Build a Zoo
@@ -34,4 +36,5 @@ local Games = {
 }
 
 return Games
+
 
