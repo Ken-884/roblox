@@ -912,7 +912,7 @@ local function CreateSeisenKeyUI()
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "Main"
     mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    mainFrame.BackgroundTransparency = 0.3
+    mainFrame.BackgroundTransparency = 0.15
     mainFrame.BorderSizePixel = 0
     mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
@@ -2605,7 +2605,7 @@ local function CreateSeisenKeyUI()
     keyDetailsPanel.Size = UDim2.new(0, 0, 0, panelHeight)  -- Start hidden
     keyDetailsPanel.Position = UDim2.new(0.5, isMobile and 260 or 340, 0.5, 0)
     keyDetailsPanel.AnchorPoint = Vector2.new(0, 0.5)
-    keyDetailsPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    keyDetailsPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22) -- Match Main UI
     keyDetailsPanel.BorderSizePixel = 0
     keyDetailsPanel.ClipsDescendants = true  -- Changed to true for effects
     keyDetailsPanel.Visible = false  -- Start hidden, only show when arrow is clicked
@@ -2613,12 +2613,12 @@ local function CreateSeisenKeyUI()
     keyDetailsPanel.Parent = gui  -- Parent to gui, not keySection
     
     local panelCorner = Instance.new("UICorner", keyDetailsPanel)
-    panelCorner.CornerRadius = UDim.new(0, 12)
+    panelCorner.CornerRadius = UDim.new(0, 16) -- Match Main UI Corner Radius
     
 
     
     -- Enhance Key Details Panel Design (Blobs & Particles)
-    keyDetailsPanel.BackgroundTransparency = 0.05
+    keyDetailsPanel.BackgroundTransparency = 0.15
     
     -- Blob Container for Panel
     local panelBlobContainer = Instance.new("Frame")
