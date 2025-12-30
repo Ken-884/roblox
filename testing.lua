@@ -1,5 +1,5 @@
 local KeySystemTitle = "Key system"
-local KeySystemTag = "V3.0"
+local KeySystemTag = "V5.0"
 local CheckKeyTitle = "Seisen Hub Key System"
 local CheckKeySubtitle = "Checking key..."
 local HubName = "Seisen Hub"
@@ -2600,10 +2600,11 @@ local function CreateSeisenKeyUI()
     
     -- Key Details Panel (slides in from right) - OUTSIDE main UI
     local keyDetailsPanel = Instance.new("Frame")
-    local panelHeight = isMobile and 350 or 450
-    local panelWidth = isMobile and 250 or 300
-    keyDetailsPanel.Size = UDim2.new(0, 0, 0, panelHeight)  -- Start hidden
-    keyDetailsPanel.Position = UDim2.new(0.5, isMobile and 260 or 340, 0.5, 0)
+    -- Use UIScale logic like Main UI
+    keyDetailsPanel.Size = UDim2.new(0, 0, 0, 450)  -- Base size (Desktop)
+    -- Position needs to account for scale to stay attached to Main UI
+    -- Main UI width is 680, so edge is at 340. We multiply by scale.
+    keyDetailsPanel.Position = UDim2.new(0.5, 340 * uiScaleValue, 0.5, 0)
     keyDetailsPanel.AnchorPoint = Vector2.new(0, 0.5)
     keyDetailsPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22) -- Match Main UI
     keyDetailsPanel.BorderSizePixel = 0
@@ -2614,6 +2615,11 @@ local function CreateSeisenKeyUI()
     
     local panelCorner = Instance.new("UICorner", keyDetailsPanel)
     panelCorner.CornerRadius = UDim.new(0, 16) -- Match Main UI Corner Radius
+    
+    -- Apply UIScale
+    local panelScale = Instance.new("UIScale")
+    panelScale.Scale = uiScaleValue
+    panelScale.Parent = keyDetailsPanel
     
 
     
@@ -3057,7 +3063,7 @@ local function CreateSeisenKeyUI()
             keyDetailsArrow.Text = "◀"  -- Left arrow when open
             keyDetailsPanel.Visible = true  -- Make panel visible
             TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, isMobile and 250 or 300, 0, isMobile and 350 or 450)
+                Size = UDim2.new(0, 300, 0, 450) -- Base size, scaled by UIScale
             }):Play()
             
             -- Refresh key details
@@ -3066,7 +3072,7 @@ local function CreateSeisenKeyUI()
             -- Close panel
             keyDetailsArrow.Text = "▶"  -- Right arrow when closed
             local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.new(0, 0, 0, isMobile and 350 or 450)
+                Size = UDim2.new(0, 0, 0, 450)
             })
             closeTween:Play()
             closeTween.Completed:Connect(function()
@@ -3080,7 +3086,7 @@ local function CreateSeisenKeyUI()
         panelOpen = false
         keyDetailsArrow.Text = "▶"
         local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 0, 0, isMobile and 350 or 450)
+            Size = UDim2.new(0, 0, 0, 450)
         })
         closeTween:Play()
         closeTween.Completed:Connect(function()
