@@ -2600,12 +2600,14 @@ local function CreateSeisenKeyUI()
     
     -- Key Details Panel (slides in from right) - OUTSIDE main UI
     local keyDetailsPanel = Instance.new("Frame")
-    keyDetailsPanel.Size = UDim2.new(0, 0, 0, 450)  -- Start hidden (width = 0), taller panel
-    keyDetailsPanel.Position = UDim2.new(0.5, 340, 0.5, 0)  -- Same Y position as main frame (0.5, 0)
+    local panelHeight = isMobile and 350 or 450
+    local panelWidth = isMobile and 250 or 300
+    keyDetailsPanel.Size = UDim2.new(0, 0, 0, panelHeight)  -- Start hidden
+    keyDetailsPanel.Position = UDim2.new(0.5, isMobile and 260 or 340, 0.5, 0)
     keyDetailsPanel.AnchorPoint = Vector2.new(0, 0.5)
     keyDetailsPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
     keyDetailsPanel.BorderSizePixel = 0
-    keyDetailsPanel.ClipsDescendants = false  -- Allow content to be visible
+    keyDetailsPanel.ClipsDescendants = true  -- Changed to true for effects
     keyDetailsPanel.Visible = false  -- Start hidden, only show when arrow is clicked
     keyDetailsPanel.ZIndex = 150  -- Higher z-index to appear above everything
     keyDetailsPanel.Parent = gui  -- Parent to gui, not keySection
@@ -2613,10 +2615,74 @@ local function CreateSeisenKeyUI()
     local panelCorner = Instance.new("UICorner", keyDetailsPanel)
     panelCorner.CornerRadius = UDim.new(0, 12)
     
-    local panelStroke = Instance.new("UIStroke", keyDetailsPanel)
-    panelStroke.Thickness = 2
-    panelStroke.Color = Color3.fromRGB(88, 101, 242)
-    panelStroke.Transparency = 0.3
+
+    
+    -- Enhance Key Details Panel Design (Blobs & Particles)
+    keyDetailsPanel.BackgroundTransparency = 0.05
+    
+    -- Blob Container for Panel
+    local panelBlobContainer = Instance.new("Frame")
+    panelBlobContainer.Size = UDim2.new(1, 0, 1, 0)
+    panelBlobContainer.BackgroundTransparency = 1
+    panelBlobContainer.ZIndex = 0
+    panelBlobContainer.Parent = keyDetailsPanel
+    
+    local function createPanelBlob(size, startPos, color, duration)
+        local blob = Instance.new("Frame")
+        blob.Size = UDim2.new(0, size, 0, size)
+        blob.Position = startPos
+        blob.AnchorPoint = Vector2.new(0.5, 0.5)
+        blob.BackgroundColor3 = color
+        blob.BackgroundTransparency = 0.92
+        blob.BorderSizePixel = 0
+        blob.ZIndex = 1
+        blob.Parent = panelBlobContainer
+        
+        local corner = Instance.new("UICorner", blob)
+        corner.CornerRadius = UDim.new(1, 0)
+        
+        task.spawn(function()
+            while blob and blob.Parent do
+                local randomX = math.random(10, 90) / 100
+                local randomY = math.random(10, 90) / 100
+                TweenService:Create(blob, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(randomX, 0, randomY, 0)}):Play()
+                task.wait(duration)
+            end
+        end)
+    end
+    
+    createPanelBlob(150, UDim2.new(0.8, 0, 0.2, 0), Color3.fromRGB(100, 100, 120), 10)
+    createPanelBlob(120, UDim2.new(0.2, 0, 0.8, 0), Color3.fromRGB(80, 80, 100), 12)
+    
+    -- Particle Container for Panel
+    local panelParticleContainer = Instance.new("Frame")
+    panelParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+    panelParticleContainer.BackgroundTransparency = 1
+    panelParticleContainer.ZIndex = 1
+    panelParticleContainer.Parent = keyDetailsPanel
+    
+    for i = 1, 15 do
+        local particle = Instance.new("Frame")
+        local size = math.random(2, 4)
+        particle.Size = UDim2.new(0, size, 0, size)
+        particle.Position = UDim2.new(math.random(0, 100) / 100, 0, math.random(0, 100) / 100, 0)
+        particle.BackgroundColor3 = Color3.fromRGB(150, 150, 170)
+        particle.BackgroundTransparency = 0.7
+        particle.BorderSizePixel = 0
+        particle.Parent = panelParticleContainer
+        
+        local corner = Instance.new("UICorner", particle)
+        corner.CornerRadius = UDim.new(1, 0)
+        
+        task.spawn(function()
+            while particle and particle.Parent do
+                local duration = math.random(8, 15)
+                TweenService:Create(particle, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Position = UDim2.new(particle.Position.X.Scale, 0, -0.1, 0)}):Play()
+                task.wait(duration)
+                particle.Position = UDim2.new(math.random(0, 100) / 100, 0, 1.1, 0)
+            end
+        end)
+    end
     
     local panelPadding = Instance.new("UIPadding", keyDetailsPanel)
     panelPadding.PaddingTop = UDim.new(0, 15)
@@ -2800,19 +2866,7 @@ local function CreateSeisenKeyUI()
     local deleteKeyCorner = Instance.new("UICorner", deleteKeyBtn)
     deleteKeyCorner.CornerRadius = UDim.new(0, 8)
     
-    local resetHwidBtn = Instance.new("TextButton")
-    resetHwidBtn.Size = UDim2.new(1, 0, 0, 35)
-    resetHwidBtn.Position = UDim2.new(0, 0, 0, 355)  -- Moved down
-    resetHwidBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-    resetHwidBtn.BorderSizePixel = 0
-    resetHwidBtn.Font = Enum.Font.GothamBold
-    resetHwidBtn.Text = "🔄 Reset HWID"
-    resetHwidBtn.TextSize = 12
-    resetHwidBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    resetHwidBtn.Parent = keyDetailsPanel
-    
-    local resetHwidCorner = Instance.new("UICorner", resetHwidBtn)
-    resetHwidCorner.CornerRadius = UDim.new(0, 8)
+
     
     -- Panel toggle state
     local panelOpen = false
@@ -3003,7 +3057,7 @@ local function CreateSeisenKeyUI()
             keyDetailsArrow.Text = "◀"  -- Left arrow when open
             keyDetailsPanel.Visible = true  -- Make panel visible
             TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 300, 0, 450)  -- Wider and taller panel
+                Size = UDim2.new(0, isMobile and 250 or 300, 0, isMobile and 350 or 450)
             }):Play()
             
             -- Refresh key details
@@ -3012,7 +3066,7 @@ local function CreateSeisenKeyUI()
             -- Close panel
             keyDetailsArrow.Text = "▶"  -- Right arrow when closed
             local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.new(0, 0, 0, 450)
+                Size = UDim2.new(0, 0, 0, isMobile and 350 or 450)
             })
             closeTween:Play()
             closeTween.Completed:Connect(function()
@@ -3026,7 +3080,7 @@ local function CreateSeisenKeyUI()
         panelOpen = false
         keyDetailsArrow.Text = "▶"
         local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 0, 0, 450)
+            Size = UDim2.new(0, 0, 0, isMobile and 350 or 450)
         })
         closeTween:Play()
         closeTween.Completed:Connect(function()
@@ -3161,28 +3215,8 @@ local function CreateSeisenKeyUI()
     end)
     
     -- Reset HWID button handler
-    resetHwidBtn.MouseButton1Click:Connect(function()
-        -- Try to reset HWID using JunkieProtected API
-        local success, result = pcall(function()
-            if JunkieProtected and JunkieProtected.ResetHWID then
-                return JunkieProtected.ResetHWID()
-            end
-            return nil
-        end)
-        
-        if success and result then
-            ShowNotification("generated")  -- Show success notification
-            -- Optionally show a custom message
-            task.spawn(function()
-                task.wait(2)
-                -- You could add additional feedback here
-            end)
-        else
-            -- If API not available, show error
-            warn("HWID Reset failed: API not available or error occurred")
-            ShowNotification("invalid")
-        end
-    end)
+    -- Reset HWID button handler
+
     
     -- Hover effects
     deleteKeyBtn.MouseEnter:Connect(function()
@@ -3192,12 +3226,7 @@ local function CreateSeisenKeyUI()
         TweenService:Create(deleteKeyBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 60, 60)}):Play()
     end)
     
-    resetHwidBtn.MouseEnter:Connect(function()
-        TweenService:Create(resetHwidBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(108, 121, 255)}):Play()
-    end)
-    resetHwidBtn.MouseLeave:Connect(function()
-        TweenService:Create(resetHwidBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}):Play()
-    end)
+
     
     keyDetailsArrow.MouseEnter:Connect(function()
         TweenService:Create(keyDetailsArrow, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(65, 65, 75)}):Play()
@@ -3885,8 +3914,8 @@ local function CreateSeisenKeyUI()
                     if validateKey(key) then
                         updateStatus("Valid!", Color3.fromRGB(80, 200, 120))
                         
-                        -- Save verification timestamp for simulated timer
-                        if writefile then
+                        -- Save verification timestamp ONLY if not exists (preserve original time)
+                        if writefile and (not isfile or not isfile("seisen/key_timestamp.txt")) then
                             writefile("seisen/key_timestamp.txt", tostring(os.time()))
                         end
                         
