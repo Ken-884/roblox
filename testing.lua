@@ -855,24 +855,26 @@ local function CreateSeisenKeyUI()
     
     -- Detect screen size and calculate scale
     local viewport = workspace.CurrentCamera.ViewportSize
-    local isMobile = viewport.X < 800 or viewport.Y < 600
+    -- More aggressive mobile detection
+    local isMobile = viewport.X < 1000 or viewport.Y < 700
     
-    -- Use fixed base dimensions (same as PC)
+    -- Always use fixed base dimensions (PC size)
     local baseWidth = 650
     local baseHeight = 525
     
-    -- Calculate scale to fit the screen while maintaining aspect ratio
-    local scaleX = (viewport.X * 0.95) / baseWidth
-    local scaleY = (viewport.Y * 0.90) / baseHeight
-    local screenScale = math.min(scaleX, scaleY)
+    -- Calculate how much to scale the UI to fit mobile screens
+    local uiScaleValue = 1.0  -- Default for PC
     
-    -- Cap scale at 1.0 so UI never gets bigger than base size
-    -- This ensures PC stays at 650x525 and mobile scales down
-    screenScale = math.min(screenScale, 1.0)
-    
-    -- Apply the scale to dimensions
-    baseWidth = baseWidth * screenScale
-    baseHeight = baseHeight * screenScale
+    if isMobile then
+        -- Much more aggressive scaling for mobile - use less screen space
+        local scaleX = (viewport.X * 0.70) / baseWidth  -- Use only 70% of screen width
+        local scaleY = (viewport.Y * 0.65) / baseHeight  -- Use only 65% of screen height
+        uiScaleValue = math.min(scaleX, scaleY)
+        -- Ensure we don't scale up, only down
+        uiScaleValue = math.min(uiScaleValue, 1.0)
+        -- Also set a minimum scale so it doesn't get too tiny
+        uiScaleValue = math.max(uiScaleValue, 0.4)
+    end
     
     local gui = Instance.new("ScreenGui")
     gui.Name = "SeisenKeyUI"
@@ -889,14 +891,14 @@ local function CreateSeisenKeyUI()
     mainFrame.BorderSizePixel = 0
     mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
-    mainFrame.Size = UDim2.new(0, baseWidth, 0, baseHeight)
+    mainFrame.Size = UDim2.new(0, baseWidth, 0, baseHeight)  -- Always use base PC size
     mainFrame.ClipsDescendants = true
     mainFrame.ZIndex = 2
     mainFrame.Parent = gui
     
-    -- Apply UIScale to scale everything uniformly
+    -- Apply UIScale to make it smaller on mobile
     local uiScale = Instance.new("UIScale")
-    uiScale.Scale = 1  -- Scale is already applied to baseWidth/baseHeight
+    uiScale.Scale = uiScaleValue  -- This will be < 1.0 on mobile, making everything smaller
     uiScale.Parent = mainFrame
 
     local mainCorner = Instance.new("UICorner", mainFrame)
