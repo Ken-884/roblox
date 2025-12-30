@@ -866,6 +866,10 @@ local function CreateSeisenKeyUI()
     local scaleY = (viewport.Y * 0.90) / baseHeight
     local screenScale = math.min(scaleX, scaleY)
     
+    -- Cap scale at 1.0 so UI never gets bigger than base size
+    -- This ensures PC stays at 650x525 and mobile scales down
+    screenScale = math.min(screenScale, 1.0)
+    
     -- Apply the scale to dimensions
     baseWidth = baseWidth * screenScale
     baseHeight = baseHeight * screenScale
