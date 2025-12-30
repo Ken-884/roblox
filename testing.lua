@@ -1,6 +1,3 @@
--- GET OUT SKIDDD!!
-
-
 local KeySystemTitle = "Key system"
 local KeySystemTag = "V3.0"
 local CheckKeyTitle = "Seisen Hub Key System"
@@ -858,22 +855,20 @@ local function CreateSeisenKeyUI()
     
     -- Detect screen size and calculate scale
     local viewport = workspace.CurrentCamera.ViewportSize
-    -- Better mobile detection - consider both portrait and landscape
     local isMobile = viewport.X < 800 or viewport.Y < 600
-    local isSmallMobile = viewport.X < 400 or viewport.Y < 700
     
-    -- Calculate appropriate scale based on screen size
-    local screenScale = 1
-    if isMobile then
-        -- For mobile, use a more conservative scale that ensures content fits
-        screenScale = math.min((viewport.X * 0.95) / 420, (viewport.Y * 0.90) / 650)
-    else
-        screenScale = math.min(viewport.X / 650, viewport.Y / 520)
-    end
+    -- Use fixed base dimensions (same as PC)
+    local baseWidth = 650
+    local baseHeight = 525
     
-    -- Base dimensions - adjusted for better mobile support
-    local baseWidth = isMobile and math.min(viewport.X * 0.95, 420) or 650
-    local baseHeight = isMobile and math.min(viewport.Y * 0.90, 650) or 525
+    -- Calculate scale to fit the screen while maintaining aspect ratio
+    local scaleX = (viewport.X * 0.95) / baseWidth
+    local scaleY = (viewport.Y * 0.90) / baseHeight
+    local screenScale = math.min(scaleX, scaleY)
+    
+    -- Apply the scale to dimensions
+    baseWidth = baseWidth * screenScale
+    baseHeight = baseHeight * screenScale
     
     local gui = Instance.new("ScreenGui")
     gui.Name = "SeisenKeyUI"
@@ -890,11 +885,15 @@ local function CreateSeisenKeyUI()
     mainFrame.BorderSizePixel = 0
     mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     mainFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
-    local fullSize = UDim2.new(0, baseWidth, 0, baseHeight)
-    mainFrame.Size = fullSize
+    mainFrame.Size = UDim2.new(0, baseWidth, 0, baseHeight)
     mainFrame.ClipsDescendants = true
     mainFrame.ZIndex = 2
     mainFrame.Parent = gui
+    
+    -- Apply UIScale to scale everything uniformly
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = 1  -- Scale is already applied to baseWidth/baseHeight
+    uiScale.Parent = mainFrame
 
     local mainCorner = Instance.new("UICorner", mainFrame)
     mainCorner.CornerRadius = UDim.new(0, 16)
@@ -1032,11 +1031,11 @@ local function CreateSeisenKeyUI()
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
     title.Size = UDim2.new(0, 200, 1, 0)
-    title.Position = UDim2.new(0, isMobile and 12 or 20, 0, 0)
+    title.Position = UDim2.new(0, 20, 0, 0)
     title.Font = Enum.Font.GothamBold
     title.Text = KeySystemTitle
     title.TextXAlignment = Enum.TextXAlignment.Left
-    title.TextSize = isMobile and 14 or 17
+    title.TextSize = 17
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.TextStrokeTransparency = 0.8
     title.TextStrokeColor3 = Color3.fromRGB(88, 101, 242)
@@ -1044,11 +1043,11 @@ local function CreateSeisenKeyUI()
 
     local beta = Instance.new("TextLabel")
     beta.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    beta.Size = UDim2.new(0, isMobile and 55 or 65, 0, isMobile and 20 or 22)
-    beta.Position = UDim2.new(0, isMobile and 100 or 130, 0.5, isMobile and -10 or -11)
+    beta.Size = UDim2.new(0, 65, 0, 22)
+    beta.Position = UDim2.new(0, 130, 0.5, -11)
     beta.Font = Enum.Font.GothamBold
     beta.Text = KeySystemTag
-    beta.TextSize = isMobile and 9 or 11
+    beta.TextSize = 11
     beta.TextColor3 = Color3.fromRGB(220, 220, 220)
     beta.Parent = topbar
 
@@ -1062,31 +1061,31 @@ local function CreateSeisenKeyUI()
 
     local helpBtn = Instance.new("TextButton")
     helpBtn.BackgroundTransparency = 1
-    helpBtn.Size = UDim2.new(0, isMobile and 25 or 30, 0, isMobile and 25 or 30)
-    helpBtn.Position = UDim2.new(1, isMobile and -85 or -105, 0.5, -15)
+    helpBtn.Size = UDim2.new(0, 30, 0, 30)
+    helpBtn.Position = UDim2.new(1, -105, 0.5, -15)
     helpBtn.Font = Enum.Font.GothamBold
     helpBtn.Text = "?"
-    helpBtn.TextSize = isMobile and 14 or 18
+    helpBtn.TextSize = 18
     helpBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
     helpBtn.Parent = topbar
 
     local minimize = Instance.new("TextButton")
     minimize.BackgroundTransparency = 1
-    minimize.Size = UDim2.new(0, isMobile and 25 or 30, 0, isMobile and 25 or 30)
-    minimize.Position = UDim2.new(1, isMobile and -55 or -70, 0.5, -15)
+    minimize.Size = UDim2.new(0, 30, 0, 30)
+    minimize.Position = UDim2.new(1, -70, 0.5, -15)
     minimize.Font = Enum.Font.GothamBold
     minimize.Text = "−"
-    minimize.TextSize = isMobile and 18 or 22
+    minimize.TextSize = 22
     minimize.TextColor3 = Color3.fromRGB(220, 220, 220)
     minimize.Parent = topbar
 
     local close = Instance.new("TextButton")
     close.BackgroundTransparency = 1
-    close.Size = UDim2.new(0, isMobile and 25 or 30, 0, isMobile and 25 or 30)
-    close.Position = UDim2.new(1, isMobile and -28 or -35, 0.5, -15)
+    close.Size = UDim2.new(0, 30, 0, 30)
+    close.Position = UDim2.new(1, -35, 0.5, -15)
     close.Font = Enum.Font.GothamBold
     close.Text = "X"
-    close.TextSize = isMobile and 14 or 18
+    close.TextSize = 18
     close.TextColor3 = Color3.fromRGB(220, 220, 220)
     close.Parent = topbar
     
@@ -1141,11 +1140,11 @@ local function CreateSeisenKeyUI()
     local headerTitle = Instance.new("TextLabel")
     headerTitle.BackgroundTransparency = 1
     headerTitle.Size = UDim2.new(1, -40, 0, 28)
-    headerTitle.Position = UDim2.new(0, isMobile and 12 or 20, 0, 60)
+    headerTitle.Position = UDim2.new(0, 20, 0, 60)
     headerTitle.Font = Enum.Font.GothamBold
     headerTitle.TextXAlignment = Enum.TextXAlignment.Center
     headerTitle.Text = HubName
-    headerTitle.TextSize = isMobile and 18 or 24
+    headerTitle.TextSize = 24
     headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     headerTitle.TextStrokeTransparency = 0.7
     headerTitle.TextStrokeColor3 = Color3.fromRGB(88, 101, 242)
@@ -1238,8 +1237,8 @@ local function CreateSeisenKeyUI()
 
     -- Key Status Indicator with pulsing effect
     local statusFrame = Instance.new("Frame")
-    statusFrame.Size = UDim2.new(0, isMobile and 90 or 100, 0, isMobile and 22 or 24)
-    statusFrame.Position = UDim2.new(0.5, 0, 0, isMobile and 95 or 95)
+    statusFrame.Size = UDim2.new(0, 100, 0, 24)
+    statusFrame.Position = UDim2.new(0.5, 0, 0, 95)
     statusFrame.AnchorPoint = Vector2.new(0.5, 0)
     statusFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
     statusFrame.BorderSizePixel = 0
@@ -1297,32 +1296,22 @@ local function CreateSeisenKeyUI()
     statusLabel.Position = UDim2.new(0, 0, 0, 0)
     statusLabel.Font = Enum.Font.GothamSemibold
     statusLabel.Text = "  Pending"
-    statusLabel.TextSize = isMobile and 10 or 11
+    statusLabel.TextSize = 11
     statusLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
     statusLabel.TextXAlignment = Enum.TextXAlignment.Center
     statusLabel.Parent = statusFrame
 
-    -- Main Content Container - Responsive layout
+    -- Main Content Container
     local content = Instance.new("Frame")
-    if isMobile then
-        content.Size = UDim2.new(1, -30, 0, 450)
-        content.Position = UDim2.new(0, 15, 0, 130)
-    else
-        content.Size = UDim2.new(1, -40, 0, 320)
-        content.Position = UDim2.new(0, 20, 0, 135)
-    end
+    content.Size = UDim2.new(1, -40, 0, 320)
+    content.Position = UDim2.new(0, 20, 0, 135)
     content.BackgroundTransparency = 1
     content.Parent = mainFrame
 
-    -- Left Column (Profile + Games) - Adjust for mobile
+    -- Left Column (Profile + Games)
     local leftColumn = Instance.new("Frame")
-    if isMobile then
-        leftColumn.Size = UDim2.new(1, 0, 0, 220)
-        leftColumn.Position = UDim2.new(0, 0, 0, 0)
-    else
-        leftColumn.Size = UDim2.new(0, 300, 1, 0)
-        leftColumn.Position = UDim2.new(0, 0, 0, 0)
-    end
+    leftColumn.Size = UDim2.new(0, 300, 1, 0)
+    leftColumn.Position = UDim2.new(0, 0, 0, 0)
     leftColumn.BackgroundTransparency = 1
     leftColumn.Parent = content
 
@@ -1890,15 +1879,10 @@ local function CreateSeisenKeyUI()
         end
     end)
 
-    -- Right Column (Key Input + Discord) - Adjust for mobile
+    -- Right Column (Key Input + Discord)
     local rightColumn = Instance.new("Frame")
-    if isMobile then
-        rightColumn.Size = UDim2.new(1, 0, 0, 220)
-        rightColumn.Position = UDim2.new(0, 0, 0, 230)
-    else
-        rightColumn.Size = UDim2.new(0, 290, 1, 0)
-        rightColumn.Position = UDim2.new(1, -290, 0, 0)
-    end
+    rightColumn.Size = UDim2.new(0, 290, 1, 0)
+    rightColumn.Position = UDim2.new(1, -290, 0, 0)
     rightColumn.BackgroundTransparency = 1
     rightColumn.Parent = content
 
