@@ -23,7 +23,7 @@ local Games = {
     ["7546582051"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_DungeonHeroes.lua",
     -- Fish It
     ["6701277882"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_FishIt.lua",
-    -- Hypershot (Discontinued)
+    -- Hypershot
     ["5995470825"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Hypershot.lua",
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua",
