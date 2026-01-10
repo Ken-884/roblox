@@ -27,6 +27,8 @@ local Games = {
     ["5995470825"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Hypershot.lua",
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua",
+    -- RE:XL
+    ["6867859535"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RE%3AXL.lua",
     -- Restaurant Tycoon 3
     ["7094518649"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RestaurantTycoon3.lua",
     -- Swordburst 3
@@ -36,6 +38,7 @@ local Games = {
 }
 
 return Games
+
 
 
 
