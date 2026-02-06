@@ -1,6 +1,6 @@
 -- Load GameList
 local success, Games = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/gamelist.lua"))()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Test/gamelist.lua"))()
 end)
 
 if not success or type(Games) ~= "table" then
@@ -23,4 +23,5 @@ if scriptUrl then
     end
 else
     warn("No script found for this game: " .. gameId)
+
 end
