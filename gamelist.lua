@@ -21,6 +21,8 @@ local Games = {
     ["7468338447"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_DigtoEarthFinal.lua",
     -- Dungeon Heroes
     ["7546582051"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_DungeonHeroes.lua",
+    -- Farm It
+    ["8328649632"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Farmit.lua"
     -- Fish It
     ["6701277882"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_FishIt.lua",
     -- Hypershot
