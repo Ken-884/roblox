@@ -28,7 +28,7 @@ local Games = {
     -- Hypershot
     ["5995470825"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Hypershot.lua",
     -- Levelbound
-    ["9529182643"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Levelbound.lua",
+    ["9529182643"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/premium/Script/Levelbound.lua",
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua",
     -- RE:XL
@@ -42,6 +42,7 @@ local Games = {
 }
 
 return Games
+
 
 
 
