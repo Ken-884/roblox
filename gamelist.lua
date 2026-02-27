@@ -25,6 +25,8 @@ local Games = {
     ["8328640632"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Farmit.lua",
     -- Fish It
     ["6701277882"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_FishIt.lua",
+    -- Garden Horizon
+    ["9509842868"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/GardenHorizon",
     -- Hypershot
     ["5995470825"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Hypershot.lua",
     -- Levelbound
