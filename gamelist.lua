@@ -33,6 +33,8 @@ local Games = {
     ["9529182643"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Levelbound.lua",
     -- Plant vs Brainrot
     ["8316902627"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_PlantvsBrainrot.lua",
+    -- Raft 101 Survival
+    ["8662243497"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Raft%20101%20Survival.lua",
     -- RE:XL
     ["6867859535"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RE%3AXL.lua",
     -- Restaurant Tycoon 3
