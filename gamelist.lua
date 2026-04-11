@@ -11,10 +11,10 @@ local Games = {
     ["111958650"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Arsenal.lua",
     -- Blue Heater 2
     ["5803093656"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BlueHeater2.lua",
-    -- Build a Zoo
-    ["8066283370"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildAZoo.lua",
     -- Build an Island
     ["7541395924"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildanIsland.lua",
+    -- Build a Zoo
+    ["8066283370"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BuildAZoo.lua",
     -- Dig a Brainrot
     ["8820222330"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_DigaBrainrot.lua",
     -- Dig to Earth
@@ -39,10 +39,10 @@ local Games = {
     ["6867859535"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RE%3AXL.lua",
     -- Restaurant Tycoon 3
     ["7094518649"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RestaurantTycoon3.lua",
-    -- Swordburst 3
-    ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Swordburst3.lua",
     -- Summon Heroes
     ["9802644580"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Summon%20Heroes",
+    -- Swordburst 3
+    ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Swordburst3.lua",
     -- The Forge
     ["7671049560"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_TheForge.lua"
 }
