@@ -42,7 +42,7 @@ local Games = {
     -- Swordburst 3
     ["4093155512"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Swordburst3.lua",
     -- Summon Heroes
-    ["9802644580"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Summon%20Heroes"
+    ["9802644580"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Summon%20Heroes",
     -- The Forge
     ["7671049560"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_TheForge.lua"
 }
