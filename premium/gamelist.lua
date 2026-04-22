@@ -39,6 +39,8 @@ local Games = {
     ["6867859535"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RE%3AXL.lua",
     -- Restaurant Tycoon 3
     ["7094518649"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_RestaurantTycoon3.lua",
+    -- Slime Seas
+    ["9073775318"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Slime%20Seas",
     -- Summon Heroes
     ["9802644580"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Summon%20Heroes",
     -- Swordburst 3
