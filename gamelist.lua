@@ -9,6 +9,8 @@ local Games = {
     ["7074860883"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_AriseCrossover.lua",
     -- Arsenal
     ["111958650"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_Arsenal.lua",
+    -- Bee Garden
+    ["8220767002"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Bee%20Garden",
     -- Blue Heater 2
     ["5803093656"] = "https://raw.githubusercontent.com/Ken-884/roblox/refs/heads/main/Script/Script_BlueHeater2.lua",
     -- Build an Island
