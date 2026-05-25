@@ -1,19 +1,21 @@
-print("              .-------.");
-print("            .'         '.");
-print("           /   O     O   \\");
-print("          |       ^       |");
-print("          |    \\_____/    |");
-print("           \\             /");
-print("            `-._______.-`");
-print("              _|_____|_");
-print("");
-print(" ██████╗ ██╗  ██╗██╗██████╗ ");
-print("██╔════╝ ██║ ██╔╝██║██╔══██╗");
-print("███████╗ █████╔╝ ██║██║  ██║");
-print("╚════██║ ██╔═██╗ ██║██║  ██║");
-print("███████║ ██║  ██╗██║██████╔╝");
-print("╚══════╝ ╚═╝  ╚═╝╚═╝╚═════╝ ");
-print("");
-print("--> ERROR: [ C_L_O_W_N ] DETECTED");
-print("--> BEHAVIOR: COPYING CODE WITHOUT UNDERSTANDING");
-print("--> SKILL LEVEL: CTRL+C / CTRL+V");
+print([[
+              .-------.
+            .'         '.
+           /   O     O   \
+          |       ^       |
+          |    \_____/    |
+           \             /
+            `-._______.-`
+              _|_____|_
+
+ ██████╗ ██╗  ██╗██╗██████╗ 
+██╔════╝ ██║ ██╔╝██║██╔══██╗
+███████╗ █████╔╝ ██║██║  ██║
+╚════██║ ██╔═██╗ ██║██║  ██║
+███████║ ██║  ██╗██║██████╔╝
+╚══════╝ ╚═╝  ╚═╝╚═╝╚═════╝ 
+
+--> ERROR: [ C_L_O_W_N ] DETECTED
+--> BEHAVIOR: COPYING CODE WITHOUT UNDERSTANDING
+--> SKILL LEVEL: CTRL+C / CTRL+V
+]])
